@@ -3,7 +3,7 @@ export TNS_ADMIN=/inventory/OracleClient/instantclient_23_9/network
 export LD_LIBRARY_PATH=$ORACLE_HOME
 export PATH=$PATH:$ORACLE_HOME
 export USERNAME_DB="monitoring"
-export PASSWORD_DB="F5t9TAcbjLTzhBNE69YeYBTx1BLgOZ"
+export PASSWORD_DB="*************************************"
 
 
 echo "" > lists/databases_lms_temp.lst

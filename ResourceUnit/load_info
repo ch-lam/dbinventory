@@ -31,7 +31,7 @@ echo "truncate table oracle_security_tablespace_encrypted;
       truncate oracle_backup_info;
       truncate oracle_security_network_encryption;
       truncate oracle_client_info;
-      truncate chl_ipam_comment;" | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory
+      truncate chl_ipam_comment;" | mariadb -u root -************************************* inventory
 
 IFS=,
 
@@ -40,150 +40,150 @@ IFS=,
 while read environment license_type hostname num_cpus memory_gb os_type
       do
         echo "INSERT INTO oracle_hosts (environment,license_type,hostname,num_cpus,memory_gb,os_type) VALUES ('$environment','$license_type','$hostname','$num_cpus','$memory_gb','$os_type');"
-done < lists/hosts.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/hosts.lst | mariadb -u root -************************************* inventory;
 
 ###LOAD ORACLE USERS
 while read hostname db_name instance_name pdb_name username account_status
       do
         echo "INSERT INTO oracle_users (hostname,db_name,instance_name,pdb_name,username,account_status) VALUES ('$hostname','$db_name','$instance_name','$pdb_name','$username','$account_status');"
-done < lists/databases_users.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_users.lst | mariadb -u root -************************************* inventory;
 
 ###LOAD ORACLE BACKUP INFO
 #while read db_name backup_type status start_time end_time elapsed_time 
 #      do
 #        echo "INSERT INTO oracle_backup_info (db_name,backup_type,status,start_time,end_time,elapsed_time) VALUES ('$db_name','$backup_type','$status','$start_time','$end_time','$elapsed_time');"
-#done < lists/databases_backup.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+#done < lists/databases_backup.lst | mariadb -u root -************************************* inventory;
 
 ###LOAD DB SERVICE
 while read hostname instance_name pdb_name service_name
       do
         echo "INSERT INTO oracle_services (hostname,instance_name,pdb_name,service_name) VALUES ('$hostname','$instance_name','$pdb_name','$service_name');"
-done < lists/databases_service.lst| mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_service.lst| mariadb -u root -************************************* inventory;
 
 ###LOAD ORACLE PDB
 while read hostname instance_name pdb_name pdb_state
       do
         echo "INSERT INTO oracle_pdbs (hostname,instance_name,pdb_name,pdb_state) VALUES ('$hostname','$instance_name','$pdb_name','$pdb_state');"
-done < lists/databases_pdb_list.lst| mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_pdb_list.lst| mariadb -u root -************************************* inventory;
 
 ###LOAD ORACLE DATABASE LIST
 while read environment license_type hostname instance_name db_version db_name db_log_mode db_role db_unique_name db_charset db_edition rac_state sga pga asm_free asm_total easy_connect_tns database_type
       do
         echo "INSERT INTO oracle_database_list (environment,license_type,hostname,instance_name,db_version,db_name,db_log_mode,db_role,db_unique_name,db_charset,db_edition,rac_state,sga,pga,asm_free,asm_total,easy_connect_tns,database_type) VALUES ('$environment','$license_type','$hostname','$instance_name','$db_version','$db_name','$db_log_mode','$db_role','$db_unique_name','$db_charset','$db_edition','$rac_state','$sga','$pga','$asm_free','$asm_total','$easy_connect_tns','$database_type');"
-done < lists/databases.lst| mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases.lst| mariadb -u root -************************************* inventory;
 
 ###LOAD ORACLE DATAGUARD CONFIG
 while read primary_db standby_db protection_mode pdb_list_impacted service_list_impacted
       do
         echo "INSERT INTO oracle_dataguard (primary_db,standby_db,protection_mode,pdb_list_impacted,service_list_impacted) VALUES ('$primary_db','$standby_db','$protection_mode','$pdb_list_impacted','$service_list_impacted');"
-done < lists/databases_dataguard.lst| mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_dataguard.lst| mariadb -u root -************************************* inventory;
 
 ###LOAD PSU INFO
 while read db_name db_version psu_applied 
       do
         echo "INSERT INTO oracle_psu (db_name,db_version,psu_applied) VALUES ('$db_name','$db_version','$psu_applied');"
-done < lists/databases_psu_list.lst| mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_psu_list.lst| mariadb -u root -************************************* inventory;
 
 ###LOAD MSSQL HOST LIST
 while read hostname mssql_edition mssql_product_version collation is_clustered activenodename clusternode1 clusternode2 parallel_threshold max_dop min_memory max_memory xp_cmdshell_enabled num_cpus memory_gb os_type install_date service_account env license_type
       do
         echo "INSERT INTO mssql_hosts (hostname,mssql_edition,mssql_product_version,collation,is_clustered,activenodename,clusternode1,clusternode2,parallel_threshold,max_dop,min_memory,max_memory,xp_cmdshell_enabled,num_cpus,memory_gb,os_type,install_date,service_account,env,license_type) VALUES ('$hostname','$mssql_edition','$mssql_product_version','$collation','$is_clustered','$activenodename','$clusternode1','$clusternode2','$parallel_threshold','$max_dop','$min_memory','$max_memory','$xp_cmdshell_enabled','$num_cpus','$memory_gb','$os_type','$install_date','$service_account','$env','$license_type');"
-done <  lists/hosts_sqlserver.lst| mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done <  lists/hosts_sqlserver.lst| mariadb -u root -************************************* inventory;
 
 ###LOAD MSSQL DB LIST
 while read hostname database_id database_name database_state recovery_model compatibility_level collation last_backup_date last_backup_diff_date last_backup_log_date create_date is_mirroring_enabled owner agtype agname env
       do
         echo "INSERT INTO mssql_database (hostname,database_id,database_name,database_state,recovery_model,compatibility_level,collation,last_backup_date,last_backup_diff_date,last_backup_log_date,create_date,is_mirroring_enabled,owner,agtype,agname,env) VALUES ('$hostname','$database_id','$database_name','$database_state','$recovery_model','$compatibility_level','$collation','$last_backup_date','$last_backup_diff_date','$last_backup_log_date','$create_date','$is_mirroring_enabled','$owner','$agtype','$agname','$env');"
-done <  lists/db_sqlserver.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done <  lists/db_sqlserver.lst | mariadb -u root -************************************* inventory;
 
 ###LOAD MSSQL FILE INFORMATION
 while read hostname database_name file_id type_desc name physical_name size_mb growth_percent growth_mb max_size env
       do
         echo "INSERT INTO mssql_files (hostname,database_name,file_id,type_desc,name,physical_name,size_mb,growth_percent,growth_mb,max_size,env) VALUES ('$hostname','$database_name','$file_id','$type_desc','$name','$physical_name','$size_mb','$growth_percent','$growth_mb','$max_size','$env');"
-done <  lists/fileinfo.lst| mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done <  lists/fileinfo.lst| mariadb -u root -************************************* inventory;
 
 ###LOAD MSSQL LOGIN INFORMATION
 while read instance_name LoginName AccountCreationDate LastTimeAccountModified PasswordLastSetTime DefaultDatabase DefaultLanguage IsDisabledChecked IsPolicyChecked IsExpirationChecked IsExpired DaysUntilExpiration IsLocked IsMustChange LockoutTime BadPasswordCount BadPasswordTime HistoryLength LoginSid LoginType HasServerRole
       do
         echo "INSERT INTO mssql_logins (instance_name,LoginName,AccountCreationDate,LastTimeAccountModified,PasswordLastSetTime,DefaultDatabase,DefaultLanguage,IsDisabledChecked,IsPolicyChecked,IsExpirationChecked,IsExpired,DaysUntilExpiration,IsLocked,IsMustChange,LockoutTime,BadPasswordCount,BadPasswordTime,HistoryLength,LoginSid,LoginType,HasServerRole) VALUES ('$instance_name','$LoginName','$AccountCreationDate','$LastTimeAccountModified','$PasswordLastSetTime','$DefaultDatabase','$DefaultLanguage','$IsDisabledChecked','$IsPolicyChecked','$IsExpirationChecked','$IsExpired','$DaysUntilExpiration','$IsLocked','$IsMustChange','$LockoutTime','$BadPasswordCount','$BadPasswordTime','$HistoryLength','$LoginSid','$LoginType','$HasServerRole');"
-done <  lists/logininfo.lst| mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done <  lists/logininfo.lst| mariadb -u root -************************************* inventory;
 
 ###LOAD MSSQL User INFORMATION
 while read instance_name database_name name groupname loginname defaultdbname defaultschemaname principalid sid
       do
         echo "INSERT INTO mssql_users (instance_name,database_name,name,groupname,loginname,defaultdbname,defaultschemaname,principalid,sid) VALUES ('$instance_name','$database_name','$name','$groupname','$loginname','$defaultdbname','$defaultschemaname','$principalid','$sid');"
-done <  lists/userinfo.lst| mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done <  lists/userinfo.lst| mariadb -u root -************************************* inventory;
 
 ###LOAD MSSQL login without permission INFORMATION
 while read instance_name loginname type_desc is_disabled db_perms srv_perms modify_date scandate
       do
         echo "INSERT INTO mssql_loginwoperm (instance_name,loginname,type_desc,is_disabled,db_perms,srv_perms,modify_date,scandate) VALUES ('$instance_name','$loginname','$type_desc','$is_disabled','$db_perms','$srv_perms','$modify_date','$scandate');"
-done <  lists/loginwoperm.lst| mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done <  lists/loginwoperm.lst| mariadb -u root -************************************* inventory;
 
 ###LOAD MSSQL validate login
 while read servername sid login is_disabled modify_date scandate
       do
         echo "INSERT INTO mssql_validatelogin (servername,sid,login,is_disabled,modify_date,scandate) VALUES ('$servername','$sid','$login','$is_disabled','$modify_date','$scandate');"
-done <  lists/validatelogin.lst| mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done <  lists/validatelogin.lst| mariadb -u root -************************************* inventory;
 
 ###LOAD MSSQL BACKUP INFO
 while read hostname database_name backup_start_date backup_finish_date backup_type backup_size
       do
         echo "INSERT INTO mssql_backup (hostname,database_name,backup_start_date,backup_finish_date,backup_type,backup_size) VALUES ('$hostname','$database_name','$backup_start_date','$backup_finish_date','$backup_type','$backup_size');"
-done <  lists/bu_sqlserver.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done <  lists/bu_sqlserver.lst | mariadb -u root -************************************* inventory;
 
 
 ###LOAD SECURITY INFO
 while read db_name username
       do
         echo "INSERT INTO oracle_security_admin_high_privs (db_name,username) VALUES ('$db_name','$username');"
-done < lists/databases_security_admin_high_privs.lst| mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_security_admin_high_privs.lst| mariadb -u root -************************************* inventory;
 
 while read db_name pdb_name username
       do
         echo "INSERT INTO oracle_security_default_user_pwd (db_name,pdb_name,username) VALUES ('$db_name','$pdb_name','$username');"
-done < lists/databases_security_default_user_pwd.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_security_default_user_pwd.lst | mariadb -u root -************************************* inventory;
 
 while read db_name pdb_name username privilege
       do
         echo "INSERT INTO oracle_security_high_role_privs (db_name,pdb_name,username,privilege) VALUES ('$db_name','$pdb_name','$username','$privilege');"
-done < lists/databases_security_high_role_privs.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_security_high_role_privs.lst | mariadb -u root -************************************* inventory;
 
 while read db_name pdb_name username privilege
       do
         echo "INSERT INTO oracle_security_high_sys_privs (db_name,pdb_name,username,privilege) VALUES ('$db_name','$pdb_name','$username','$privilege');"
-done < lists/databases_security_high_sys_privs.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_security_high_sys_privs.lst | mariadb -u root -************************************* inventory;
 
 while read db_name pdb_name username privilege
       do
         echo "INSERT INTO oracle_security_high_tab_privs (db_name,pdb_name,username,privilege) VALUES ('$db_name','$pdb_name','$username','$privilege');"
-done < lists/databases_security_high_tab_privs.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_security_high_tab_privs.lst | mariadb -u root -************************************* inventory;
 
 while read db_name pdb_name profile resource_name limit_value
       do
         echo "INSERT INTO oracle_security_profile (db_name,pdb_name,profile,resource_name,limit_value) VALUES ('$db_name','$pdb_name','$profile','$resource_name','$limit_value');"
-done < lists/databases_security_profile.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_security_profile.lst | mariadb -u root -************************************* inventory;
 
 while read db_name pdb_name username profile oracle_managed
       do
         echo "INSERT INTO oracle_security_default_profile  (db_name,pdb_name,username,profile,oracle_managed) VALUES ('$db_name','$pdb_name','$username','$profile','$oracle_managed');"
-done < lists/databases_security_default_profile.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_security_default_profile.lst | mariadb -u root -************************************* inventory;
 
 
 while read db_name parameter_value parameter_name 
       do
       echo "INSERT INTO oracle_security_parameter (db_name,parameter_value,parameter_name) VALUES ('$db_name','$parameter_value','$parameter_name');"
-done < lists/databases_security_parameter.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_security_parameter.lst | mariadb -u root -************************************* inventory;
 
 while read db_name pdb_name audit_parameter audit_activated 
       do
         echo "INSERT INTO oracle_security_audit_enable (db_name,pdb_name,audit_parameter,audit_activated) VALUES ('$db_name','$pdb_name','$audit_parameter','$audit_activated');"
-done < lists/databases_security_audit_enable.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_security_audit_enable.lst | mariadb -u root -************************************* inventory;
 
 while read db_name pdb_name tablespace_name encrypted
       do
         echo "INSERT INTO oracle_security_tablespace_encrypted (db_name,pdb_name,tablespace_name,encrypted) VALUES ('$db_name','$pdb_name','$tablespace_name','$encrypted');"
-done < lists/databases_security_tablespace.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_security_tablespace.lst | mariadb -u root -************************************* inventory;
 
 
 
@@ -191,51 +191,51 @@ done < lists/databases_security_tablespace.lst | mariadb -u root -p56Mu5hQu3zMsG
 while read group_id con_id db_pdb_name product_name usage_detected last_sample_date first_usage_date last_usage_date db_name hostname 
       do
         echo "INSERT INTO oracle_lms (hostname,db_name,db_pdb_name,product_name,usage_detected,first_usage_date,last_usage_date) VALUES ('$hostname','$db_name','$db_pdb_name','$product_name','$usage_detected','$first_usage_date','$last_usage_date');"
-done < lists/databases_lms.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_lms.lst | mariadb -u root -************************************* inventory;
 
 
 ####LOAD ORACLE CLIENT INFO
 while read db_name db_version environment pdb_name client_version client_driver username client_host service_name failover_type failover_method
      do
         echo "INSERT INTO oracle_client_info (db_name,db_version,environment,pdb_name,client_version,client_driver,username,client_host,service_name,failover_type,failover_method) VALUES ('$db_name','$db_version','$environment','$pdb_name','$client_version','$client_driver','$username','$client_host','$service_name','$failover_type','$failover_method');"
-done < lists/databases_oracle_client_version.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_oracle_client_version.lst | mariadb -u root -************************************* inventory;
 
 ####LOAD ORACLE CAPACITY PLANNING TABLESPACE
 while read db_name pdb_name tablespace_name size_mb
       do
         echo "INSERT INTO oracle_database_capacity_planning_dbsize (db_name,pdb_name,tablespace_name,size_mb) VALUES ('$db_name','$pdb_name','$tablespace_name','$size_mb');"
-done < lists/databases_size_usage.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_size_usage.lst | mariadb -u root -************************************* inventory;
 
 ####LOAD ORACLE CAPACITY PLANNING MEM/CPU PDB
 while read pdb_name cpu_time_minutes avg_sga_mb avg_pga_mb avg_buffer_cache_mb avg_shared_pool_mb
       do
         echo "INSERT INTO oracle_database_capacity_planning_cpu_mem (pdb_name,cpu_time_minutes,avg_sga_mb,avg_pga_mb,avg_buffer_cache_mb,avg_shared_pool_mb) VALUES ('$pdb_name','$cpu_time_minutes','$avg_sga_mb','$avg_pga_mb','$avg_buffer_cache_mb','$avg_shared_pool_mb');"
-done < lists/databases_metrics_cpu_mem_usage.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_metrics_cpu_mem_usage.lst | mariadb -u root -************************************* inventory;
 
 ####LOAD ORACLE CAPACITY PLANNING SEGMENT SIZE PDB
 while read db_name pdb_name tablespace_name sum_segment_mb
       do
         echo "INSERT INTO oracle_database_capacity_planning_dbsize_segs (db_name,pdb_name,tablespace_name,sum_segment_mb) VALUES ('$db_name','$pdb_name','$tablespace_name','$sum_segment_mb');"
-done < lists/databases_size_usage_seg.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_size_usage_seg.lst | mariadb -u root -************************************* inventory;
 
 ####LOAD ORACLE CAPACITY CPU PDB PER SERVICE
 while read pdb_name service_name cpu_time_minutes
       do
         echo "INSERT INTO oracle_database_capacity_planning_cpu_service_history (pdb_name,service_name,dbcpu_time_minutes) VALUES ('$pdb_name','$service_name','$cpu_time_minutes');"
-done < lists/databases_metrics_cpu_by_service_usage.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_metrics_cpu_by_service_usage.lst | mariadb -u root -************************************* inventory;
 
 ####LOAD ORACLE NETWORK ENCRYPTION CHECK
 while read db_name sqlnet_encryption
       do
         echo "INSERT INTO oracle_security_network_encryption (db_name,sqlnet_encryption) VALUES ('$db_name','$sqlnet_encryption');"
-done < lists/databases_security_network_encryption.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/databases_security_network_encryption.lst | mariadb -u root -************************************* inventory;
 
 
 ####LOAD ORACLE NETWORK ENCRYPTION CHECK
 while read hostname comment
       do
         echo "INSERT INTO chl_ipam_comment (hostname,comment) VALUES ('$hostname','$comment');"
-done < lists/chl_ipam_comment.lst | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory;
+done < lists/chl_ipam_comment.lst | mariadb -u root -************************************* inventory;
 
 ##BACKUP ALL LISTS
 export DIR_TIME=`date '+%y%m%d%H%M%S'`

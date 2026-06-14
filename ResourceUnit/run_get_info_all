@@ -18,9 +18,9 @@ rm -rf /inventory/ResourceUnit/lists/*.lst
 ./load_info
 
 ####SCORING ORACLE INFO
-cat "sql/oracle_scoring_data.sql" | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory
+cat "sql/oracle_scoring_data.sql" | mariadb -u root -************************************* inventory
 
 ####GET/LOAD/SCORE SQL SERVER SECURITY INFO
 ./get_info_sqlserver_security
 ./load_mssql_security
-cat "sql/mssql_scoring_data.sql" | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory
+cat "sql/mssql_scoring_data.sql" | mariadb -u root -************************************* inventory
