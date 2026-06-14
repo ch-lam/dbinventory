@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#Purge all lists
+cd /inventory/ResourceUnit
+rm -rf /inventory/ResourceUnit/lists/*.lst
+
+####ORACLE GET INFO
+./get_info_oracle_client_version
+./get_info_oracle_segs_size
+./get_info_oracle
+./get_info_oracle_security
+./get_info_oracle_lms
+
+##MSSQL GET INFO
+./get_info_sqlserver
+
+##LOAD INFO
+./load_info
+
+####SCORING ORACLE INFO
+cat "sql/oracle_scoring_data.sql" | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory
+
+####GET/LOAD/SCORE SQL SERVER SECURITY INFO
+./get_info_sqlserver_security
+./load_mssql_security
+cat "sql/mssql_scoring_data.sql" | mariadb -u root -p56Mu5hQu3zMsG5Bnm8NzdYH607Lu3m inventory

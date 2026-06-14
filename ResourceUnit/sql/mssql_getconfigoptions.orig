@@ -1,0 +1,9 @@
+SELECT @@Servername as Servername,name, CAST(value as int) as value_configured, CAST(value_in_use as int) as value_in_use
+FROM sys.configurations
+WHERE name in  ('Ad Hoc Distributed Queries','clr enabled','cross db ownership chaining','Database Mail XPs','Ole Automation Procedures',
+'remote access','scan for startup procs','xp_cmdshell','default trace enabled');
+GO
+SELECT @@Servername as Servername,name, CAST(value as int) as value_configured, CAST(value_in_use as int) as value_in_use
+FROM sys.configurations
+WHERE name = 'remote admin connections' AND SERVERPROPERTY('IsClustered') = 0;
+GO

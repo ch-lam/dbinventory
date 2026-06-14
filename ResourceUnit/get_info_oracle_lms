@@ -1,0 +1,65 @@
+export ORACLE_HOME=/inventory/OracleClient/instantclient_23_9
+export TNS_ADMIN=/inventory/OracleClient/instantclient_23_9/network
+export LD_LIBRARY_PATH=$ORACLE_HOME
+export PATH=$PATH:$ORACLE_HOME
+export USERNAME_DB="monitoring"
+export PASSWORD_DB="F5t9TAcbjLTzhBNE69YeYBTx1BLgOZ"
+
+
+echo "" > lists/databases_lms_temp.lst
+rm -rf lists/error_lms_db.lst
+
+for db in `cat oracle_database_lists.lst | grep -v "#" | cut -d ";" -f3 | sort -u`
+        do
+###CHECK CONNECT DB
+loginchk=`sqlplus dummy/user@${db} < /dev/null`
+loginchk2=` echo  $loginchk | grep -c ORA-01017`
+if [ ${loginchk2} -eq 1 ] ; then
+        export CONNECT_CHECK="OK"
+else
+        loginchk3=` echo "$loginchk" | grep "ORA-" | head -1`
+        if [ `echo ${loginchk3} | grep "ORA-01033" | wc -l` -eq 1 ]; then
+          USAGE=`echo "set feedback off;
+                       set heading off;
+                       SELECT select 'OK' from v\\$database a, v\\$instance b where a.DATABASE_ROLE='PHYSICAL STANDBY' and b.status='MOUNTED';" | sqlplus ${USERNAME_DB}/${PASSWORD_DB}@${db}`
+                        if [ `echo ${USAGE} | grep "OK" | wc -l` -eq 1 ]; then
+                                export CONNECT_CHECK="OK"
+                        else
+                                echo "${db}" >> lists/error_lms_db.lst
+                        fi
+        else
+                echo "${db}" >> lists/error_lms_db.lst
+        fi
+fi
+
+###LOOP ONLY IF SCRIPT CAN CONNECT TO DATABASES
+if [ `echo ${CONNECT_CHECK} | grep "OK" | wc -l` -eq 1 ]; then
+export CONNECT_CHECK="NA"
+
+###CHECK STANDBY
+export CHECK_STANDBY=`echo "set feedback off;
+                     set heading off;
+                     SELECT 'OK' from v\\$database where DATABASE_ROLE='PHYSICAL STANDBY';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}`
+
+ if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+ echo "set pages0;
+      set linesize 900;
+      set feedback off;
+      @sql/oracle_lms.sql;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_lms_temp.lst
+ fi
+fi
+done
+
+
+
+##Cleanup TEMP FILE
+cat lists/databases_lms_temp.lst | grep -v "SP2-0157" | grep "," | grep -v "select" | sort -u | sed '/^$/d' > lists/databases_lms.lst
+
+rm -rf lists/databases_lms_temp.lst
+
+##CHECK ERROR
+if [ -f lists/error_db.lst ]; then
+       echo "Error to generate inventory for databases below (LMS Part):
+             `cat lists/error_db.lst`" | mailx -s "Failed to generate inventory (LMS Part)" IT-DBA@chl.lu
+        exit 1
+fi

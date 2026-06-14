@@ -1,0 +1,1 @@
+	  SELECT dbs.NAME||','||'NON CONTAINER,'||usr.USERNAME FROM v$database dbs, DBA_USERS_WITH_DEFPWD usr where USERNAME NOT LIKE '%XS$NULL%'

@@ -1,0 +1,377 @@
+export ORACLE_HOME=/inventory/OracleClient/instantclient_23_9
+export TNS_ADMIN=/inventory/OracleClient/instantclient_23_9/network
+export LD_LIBRARY_PATH=$ORACLE_HOME
+export PATH=$PATH:$ORACLE_HOME
+export USERNAME_DB="monitoring"
+export PASSWORD_DB="F5t9TAcbjLTzhBNE69YeYBTx1BLgOZ"
+
+
+echo "" > lists/hosts_temp.lst
+echo "" > lists/databases_service_temp.lst
+echo "" > lists/databases_users_temp.lst
+echo "" > lists/databases_temp.lst
+echo "" > lists/databases_pdb_list_temp.lst
+echo "" > lists/databases_dataguard_temp.lst
+echo "" > lists/databases_psu_list_temp.lst
+echo "" > lists/databases_backup_temp.lst
+echo "" > lists/databases_size_usage_temp.lst
+echo "" > lists/databases_metrics_cpu_mem_usage_temp.lst
+echo "" > lists/databases_metrics_cpu_by_service_usage_temp.lst
+
+rm -rf lists/error_db.lst
+
+#############START CAPACITY PLANNING
+for db_info in `cat oracle_database_lists.lst | grep -v "#" | sort -u`
+        do
+        export db=`echo $db_info | cut -d ';' -f3`
+        export licence_type=`echo $db_info | cut -d ';' -f2`
+        export db_env=`echo $db_info | cut -d ';' -f1`
+
+
+###CHECK CONNECT DB
+loginchk=`sqlplus dummy/user@${db} < /dev/null`
+loginchk2=` echo  $loginchk | grep -c ORA-01017`
+if [ ${loginchk2} -eq 1 ] ; then
+        export CONNECT_CHECK="OK"
+else
+        loginchk3=` echo "$loginchk" | grep "ORA-" | head -1`
+        if [ `echo ${loginchk3} | grep "ORA-01033" | wc -l` -eq 1 ]; then
+          USAGE=`echo "set feedback off;
+                       set heading off;
+                       SELECT select 'OK' from v\\$database a, v\\$instance b where a.DATABASE_ROLE='PHYSICAL STANDBY' and b.status='MOUNTED';" | sqlplus ${USERNAME_DB}/${PASSWORD_DB}@${db}`
+                        if [ `echo ${USAGE} | grep "OK" | wc -l` -eq 1 ]; then
+                                export CONNECT_CHECK="OK"
+                        else
+                                echo "${db}" >> lists/error_db.lst
+                        fi
+        else
+                echo "${db}" >> lists/error_db.lst
+        fi
+fi
+
+###LOOP ONLY IF SCRIPT CAN CONNECT TO DATABASES
+if [ `echo ${CONNECT_CHECK} | grep "OK" | wc -l` -eq 1 ]; then
+CONNECT_CHECK="NA"
+
+###CHECK STANDBY
+CHECK_STANDBY=`echo "set feedback off;
+                     set heading off;
+                     SELECT 'OK' from v\\$database where DATABASE_ROLE='PHYSICAL STANDBY';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}`
+
+###CHECK BROKER
+CHECK_BROKER_ON=`echo "set feedback off;
+                     set heading off;
+                     SELECT 'OK' from v\\$parameter where NAME='dg_broker_start' and lower(value)='true';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}`
+
+####CHECK PDB
+CHECK_VERSION=`echo "set feedback off;
+                     set heading off;
+                     select 'OK' from v\\$instance where substr(version,1,2) >= 12;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}`
+
+                     if [ `echo ${CHECK_VERSION} | grep "OK" | wc -l` -eq 1 ]; then
+                         CHECK_CONTAINER=`echo "set feedback off;
+                                                set heading off;
+                                                select distinct ('OK') from v\\$pdbs where CON_ID > 1;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}`
+                     fi
+####CHECK DATABASE RELEASE
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+CHECK_VERSION_DATABASES=`echo "set feedback off;
+                               set heading off;
+                               select 'VALUE'||version from v\\$instance;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} | sed 's/VALUE//'g | grep "."`
+fi
+
+###### DB/PDB Size List Info
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
+     echo "set pages0;
+           set feedback off;
+           set linesize 999;
+           select dbs.NAME||','||pdb.PDB_NAME||','||TABLESPACE_NAME||','||round(sum(cdb.bytes/1024/1024)) from cdb_pdbs pdb, v\$database dbs, cdb_data_files cdb where pdb.PDB_ID=cdb.CON_ID and pdb.PDB_NAME not like '%SEED%' group by dbs.NAME,pdb.PDB_NAME,cdb.TABLESPACE_NAME order by 1;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_size_usage_temp.lst
+        else
+     echo "set pages0;
+           set feedback off;
+           set linesize 999;
+           select dbs.NAME||',NON_CONTAINER,'||dbf.TABLESPACE_NAME||','||round(sum(dbf.bytes/1024/1024)) from v\$database dbs, dba_data_files dbf group by dbs.NAME,dbf.TABLESPACE_NAME order by 1;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_size_usage_temp.lst
+fi
+fi
+
+###### DB/PDB Mem/CPu Usage List Info
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
+ if [ `echo ${CHECK_VERSION_DATABASES} | egrep "18|19|20" | wc -l` -eq 1 ]; then
+     echo "set pages0;
+           set feedback off;
+           set linesize 999;
+           SELECT p.pdb_name||','||round(sum(r.CPU_CONSUMED_TIME)/60000)||','||round(avg(r.sga_bytes)/1024/1024)||','||round(avg(r.pga_bytes)/1024/1024)||','||round(avg(r.buffer_cache_bytes)/1024/1024)||','||round(avg(r.shared_pool_bytes)/1024/1024) FROM dba_hist_rsrc_pdb_metric r, cdb_pdbs p WHERE  r.con_id = p.con_id AND r.end_time > sysdate -1 and p.PDB_NAME not like '%SEED%' group by p.pdb_name;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_metrics_cpu_mem_usage_temp.lst
+ fi
+fi
+fi
+
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
+     echo "set pages0;
+           set feedback off;
+           set linesize 999;
+           select pdb.pdb_name||','||hist.SERVICE_NAME||','||round(to_char(sum(hist.VALUE))/60000) from dba_hist_service_stat hist, dba_pdbs pdb where hist.con_id=pdb.pdb_id and hist.STAT_NAME='DB CPU' and hist.snap_id in (select snap_id from dba_hist_snapshot where begin_interval_time > sysdate-1) group by pdb.pdb_name,hist.SERVICE_NAME;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_metrics_cpu_by_service_usage_temp.lst
+fi
+fi
+
+fi
+
+###CLEANUP CONTAINER CHECK
+CHECK_CONTAINER="NA"
+done
+#############END CAPACITY PLANNING
+
+
+############START COLLECT INFRA ORACLE
+for db_info in `cat oracle_database_lists.lst | grep -v "#" | sort -u`
+       do
+        export db=`echo $db_info | cut -d ';' -f3`
+        export licence_type=`echo $db_info | cut -d ';' -f2`
+    export db_env=`echo $db_info | cut -d ';' -f1`
+
+###CHECK CONNECT DB
+loginchk=`sqlplus dummy/user@${db} < /dev/null`
+loginchk2=` echo  $loginchk | grep -c ORA-01017`
+if [ ${loginchk2} -eq 1 ] ; then
+        export CONNECT_CHECK="OK"
+else
+        loginchk3=` echo "$loginchk" | grep "ORA-" | head -1`
+        if [ `echo ${loginchk3} | grep "ORA-01033" | wc -l` -eq 1 ]; then
+          USAGE=`echo "set feedback off;
+                       set heading off;
+                       SELECT select 'OK' from v\\$database a, v\\$instance b where a.DATABASE_ROLE='PHYSICAL STANDBY' and b.status='MOUNTED';" | sqlplus ${USERNAME_DB}/${PASSWORD_DB}@${db}`
+                        if [ `echo ${USAGE} | grep "OK" | wc -l` -eq 1 ]; then
+                                export CONNECT_CHECK="OK"
+                        else
+                                echo "${db}" >> lists/error_db.lst
+                        fi
+        else
+                echo "${db}" >> lists/error_db.lst
+        fi
+fi
+
+###LOOP ONLY IF SCRIPT CAN CONNECT TO DATABASES
+if [ `echo ${CONNECT_CHECK} | grep "OK" | wc -l` -eq 1 ]; then
+CONNECT_CHECK="NA"
+
+###CHECK STANDBY
+CHECK_STANDBY=`echo "set feedback off;
+                     set heading off;
+                     SELECT 'OK' from v\\$database where DATABASE_ROLE='PHYSICAL STANDBY';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}`
+
+###CHECK BROKER
+CHECK_BROKER_ON=`echo "set feedback off;
+                     set heading off;
+                     SELECT 'OK' from v\\$parameter where NAME='dg_broker_start' and lower(value)='true';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}`
+
+####CHECK PDB
+CHECK_VERSION=`echo "set feedback off;
+                     set heading off;
+                     select 'OK' from v\\$instance where substr(version,1,2) >= 12;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}`
+
+                     if [ `echo ${CHECK_VERSION} | grep "OK" | wc -l` -eq 1 ]; then
+                         CHECK_CONTAINER=`echo "set feedback off;
+                                                set heading off;
+                                                select distinct ('OK') from v\\$pdbs where CON_ID > 1;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}`
+                     fi
+####CHECK DATABASE RELEASE
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+CHECK_VERSION_DATABASES=`echo "set feedback off;
+                               set heading off;
+                               select 'VALUE'||version from v\\$instance;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} | sed 's/VALUE//'g | grep "."`
+fi
+
+######Host Info
+        echo "set pages 0;
+              set heading off;
+              set feedback off;
+              set linesize 999;
+              SELECT
+              '${db_env},${licence_type},'||
+              (SELECT HOST_NAME FROM V\$INSTANCE)||','||
+              (SELECT VALUE FROM V\$OSSTAT WHERE STAT_NAME='NUM_CPUS')||','||
+              (SELECT ROUND(VALUE/1024/1024/1024) FROM V\$OSSTAT WHERE STAT_NAME='PHYSICAL_MEMORY_BYTES')||','||
+              (SELECT PLATFORM_NAME FROM V\$DATABASE)
+              FROM dual;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/hosts_temp.lst
+
+
+if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
+                export CONTAINER_MODE="CONTAINER"
+                else
+                export CONTAINER_MODE="NON_CONTAINER"
+fi
+
+######Database Info
+    echo "set pages0;
+          set linesize 900;
+          set feedback off;
+          SELECT
+            '${db_env},${licence_type},'||
+            (SELECT host_name||','||instance_name||','||VERSION FROM v\$instance)
+            ||','||(SELECT name||','||log_mode||','||database_role||','||DB_UNIQUE_NAME FROM v\$database)
+            ||','||(SELECT value FROM v\$nls_parameters WHERE parameter='NLS_CHARACTERSET')
+            ||',Enterprise Edition'
+            ||','||(SELECT value from v\$parameter where name='cluster_database')
+            ||','||(SELECT round(sum(value)/1024/1024/1024) sga from v\$sga)
+            ||','||(SELECT round(value/1024/1024/1024) pga from v\$pgastat where NAME='maximum PGA allocated')
+            ||','||(select round(USABLE_FILE_MB/1024) from v\$asm_diskgroup where name like '%DATA%' and STATE='CONNECTED')
+            ||','||(select CASE TYPE WHEN 'HIGH' THEN round(TOTAL_MB/3/1024) ELSE round(TOTAL_MB/2/1024) END from v\$asm_diskgroup where name like '%DATA%' and STATE='CONNECTED')
+            ||',${db},${CONTAINER_MODE}'
+            FROM dual;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_temp.lst
+
+
+
+######Service List Info
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+ if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
+     echo "set pages0;
+           set feedback off;
+           set linesize 999;
+           select inst.host_name||','||inst.instance_name||','||pdb.PDB_NAME||','||svc.NAME from v\$active_services svc, cdb_pdbs pdb, v\$instance inst where pdb.pdb_id=svc.con_id and svc.NAME not like 'SYS%' and svc.NAME not like '%pdb%' order by 1;
+" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_service_temp.lst
+   else
+       echo "set pages0;
+             set feedback off;
+             set linesize 999;
+             select inst.host_name||','||inst.instance_name||',NA'||','||svc.name from v\$active_services svc, v\$instance inst where svc.NAME not like 'SYS%' order by 1;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_service_temp.lst
+ fi
+fi
+
+
+######Database Users Info
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+             if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
+                echo "set pages0;
+                      set feedback off;
+                      set linesize 999;
+                      select inst.host_name||','||dbs.name||','||inst.instance_name||','||pdb.pdb_name||','||usr.USERNAME||','||usr.ACCOUNT_STATUS from cdb_users usr, v\$instance inst, v\$database dbs, dba_pdbs pdb ,(select owner,con_id, count(*) as "sum_objects" from cdb_objects group by owner,con_id) obj where usr.con_id=pdb.pdb_id and usr.con_id = obj.CON_ID and usr.username = obj.owner and usr.account_status='OPEN';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_users_temp.lst
+              else
+                echo "set pages0;
+                      set feedback off;
+                      set linesize 999;
+                      select inst.host_name||','||dbs.name||','||inst.instance_name||',NON_CONTAINER,'||usr.USERNAME||','||usr.ACCOUNT_STATUS from dba_users usr, v\$instance inst, v\$database dbs where usr.account_status='OPEN' order by 1;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_users_temp.lst
+              fi
+fi
+
+######Database Backup Info
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+                echo "set pages0;
+                      set feedback off;
+                      set linesize 999;
+                      select dbs.name||','||rma.INPUT_TYPE||','||rma.STATUS||','||to_char(rma.START_TIME,'yyyy-mm-dd hh24:mi')||','||to_char(rma.END_TIME,'yyyy-mm-dd hh24:mi')||','||round(rma.elapsed_seconds/60) from V\$RMAN_BACKUP_JOB_DETAILS rma, V\$database dbs where rma.start_time > sysdate -31 order by rma.START_TIME;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_backup_temp.lst
+fi
+
+
+##### PSU Version Info
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+             if [ `echo ${CHECK_VERSION_DATABASES} | grep "11" | wc -l` -eq 1 ]; then
+                     echo "set pages0;
+                           set feedback off;
+                           set linesize 999;
+                           SELECT a.name||',${CHECK_VERSION_DATABASES},'||b.comments FROM v\$database a,sys.registry\$history b WHERE  b.comments like '%PSU%' or b.comments like '%BP%' AND b.action = 'APPLY' AND b.ACTION_TIME = (select max(action_time) from sys.registry\$history WHERE b.comments like '%PSU%' or comments like 'BP%' AND action = 'APPLY');
+" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_psu_list_temp.lst
+              elif [ `echo ${CHECK_VERSION_DATABASES} | grep "12" | wc -l` -eq 1 ]; then
+                             echo "set pages0;
+                                   set feedback off;
+                                   set linesize 999;
+                                   SELECT a.name||',${CHECK_VERSION_DATABASES},'||replace(b.description,',','') FROM v\$database a,sys.dba_registry_sqlpatch b WHERE  b.description like 'Database PSU%' AND b.action = 'APPLY' and b.action_time = (select max(action_time) from sys.dba_registry_sqlpatch WHERE description like 'Database PSU%' AND action = 'APPLY');" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_psu_list_temp.lst
+
+              elif [ `echo ${CHECK_VERSION_DATABASES} | egrep "18|19|20" | wc -l` -eq 1 ]; then
+                             echo "set pages0;
+                                   set feedback off;
+                                   set linesize 999;
+                                   SELECT a.name||',${CHECK_VERSION_DATABASES},'||replace(b.description,',','') FROM v\$database a, sys.dba_registry_sqlpatch b WHERE  b.description like 'Database Rele%' AND b.action = 'APPLY' and b.action_time = (select max(action_time) from sys.dba_registry_sqlpatch WHERE description like 'Database Rele%' AND action = 'APPLY');" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_psu_list_temp.lst
+              fi
+fi
+
+###### PDB List Info
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
+     echo "set pages0;
+           set feedback off;
+           set linesize 999;
+           select inst.host_name||','||inst.instance_name||','||pdb.PDB_NAME||','||pdb.STATUS from cdb_pdbs pdb, v\$instance inst where pdb.PDB_NAME not like '%SEED%' order by 1;
+" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_pdb_list_temp.lst
+fi
+fi
+
+
+###### Dataguard Config
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+if [ `echo ${CHECK_BROKER_ON} | grep "OK" | wc -l` -eq 1 ]; then
+PRIMARY=`echo "show configuration;" | dgmgrl ${USERNAME_DB}/${PASSWORD_DB}@${db} | grep "Primary database"  | sed 's/- Primary database//g' | sed 's/ //g'`
+STANDBY=`echo "show configuration;" | dgmgrl ${USERNAME_DB}/${PASSWORD_DB}@${db} | grep "Physical standby database" | sed 's/- Physical standby database//g' | sed 's/ //g'`
+BROKER_CONFIG=`echo "show configuration;" | dgmgrl ${USERNAME_DB}/${PASSWORD_DB}@${db} | egrep "Protection Mode" | sed 's/Protection Mode://g' | sed 's/ //g'`
+
+if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
+     PDB_LIST_DG=`echo "set pages0;
+           set feedback off;
+           set linesize 999;
+           select '/ '||pdb.PDB_NAME||' /' from cdb_pdbs pdb, v\\$instance inst where pdb.PDB_NAME not like '%SEED%' order by 1;
+" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} | tr -d "\n"`
+else
+PDB_LIST_DG="NA"
+fi
+       SERVICE_LIST_DG=`echo "set pages0;
+             set feedback off;
+             set linesize 999;
+             select '/ '||svc.name||' /' from gv\\$active_services svc, gv\\$instance inst where svc.NAME not like 'SYS%' and svc.NAME not like '%pdbp%' order by 1;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} | tr -d "\n"`
+
+
+echo "${PRIMARY},${STANDBY},${BROKER_CONFIG},${PDB_LIST_DG},${SERVICE_LIST_DG}" >> lists/databases_dataguard_temp.lst
+
+PDB_LIST_DG=""
+SERVICE_LIST_DG=""
+PRIMARY=""
+STANDBY=""
+fi
+fi
+
+fi
+
+###CLEANUP CONTAINER CHECK
+CHECK_CONTAINER="NA"
+done
+
+##Cleanup TEMP FILE
+cat lists/hosts_temp.lst | sort -u | sed '/^$/d' > lists/hosts.lst
+
+#Add exception of collect service during Weekend - JRAGUENEAU 06/02/2025
+if [ `date "+%A" | egrep "Saturday|Sunday" | wc -l` -ne 1 ]
+        then
+                cat lists/databases_service_temp.lst | sort -u | sed '/^$/d' | grep -v "*" | grep -v "select" | grep -vi "ora-01219" > lists/databases_service.lst
+fi
+#cat lists/databases_service_temp.lst | sort -u | sed '/^$/d' | grep -v "*" | grep -v "select" | grep -vi "ora-01219" > lists/databases_service.lst
+
+cat lists/databases_users_temp.lst | sort -u | sed '/^$/d' > lists/databases_users.lst
+cat lists/databases_temp.lst | sort -u | sed '/^$/d' > lists/databases.lst
+cat lists/databases_pdb_list_temp.lst | sort -u | sed '/^$/d' > lists/databases_pdb_list.lst
+cat lists/databases_dataguard_temp.lst | sort -u | sed '/^$/d' > lists/databases_dataguard.lst
+cat lists/databases_psu_list_temp.lst | sort -u | sed '/^$/d' > lists/databases_psu_list.lst
+cat lists/databases_backup_temp.lst | sort -u | sed '/^$/d' > lists/databases_backup.lst
+cat lists/databases_size_usage_temp.lst | sort -u | sed '/^$/d' > lists/databases_size_usage.lst
+cat lists/databases_metrics_cpu_mem_usage_temp.lst | sort -u | sed '/^$/d' > lists/databases_metrics_cpu_mem_usage.lst
+cat lists/databases_metrics_cpu_by_service_usage_temp.lst | sort -u | sed '/^$/d' > lists/databases_metrics_cpu_by_service_usage.lst
+
+rm -rf lists/hosts_temp.lst
+rm -rf lists/databases_service_temp.lst
+rm -rf lists/databases_users_temp.lst
+rm -rf lists/databases_temp.lst
+rm -rf lists/databases_pdb_list_temp.lst
+rm -rf lists/databases_dataguard_temp.lst
+rm -rf lists/databases_psu_list_temp.lst
+rm -rf lists/databases_backup_temp.lst
+rm -rf lists/databases_size_usage_temp.lst
+rm -rf lists/databases_metrics_cpu_mem_usage_temp.lst
+rm -rf lists/databases_metrics_cpu_by_service_usage_temp.lst
+
+
+
+##CHECK ERROR
+if [ -f lists/error_db.lst ]; then
+       echo "Error to generate inventory for databases below:
+             `cat lists/error_db.lst`" | mailx -s "Failed to generate inventory" IT-DBA@chl.lu
+        exit 1
+fi

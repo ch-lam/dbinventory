@@ -1,0 +1,89 @@
+export PATH=/opt/mssql-tools18/bin:${PATH}
+export USERNAME_DB="monitoring"
+export PASSWORD_DB="HY9Xine38wnkC2gLadd2YafJiz5gRw"
+
+echo "" > lists/mssql_security_configoptions_temp.lst
+echo "" > lists/mssql_security_registryinfo_temp.lst
+echo "" > lists/mssql_security_guestconnect_temp.lst
+echo "" > lists/mssql_security_orphanedusers_temp.lst
+echo "" > lists/mssql_security_dbproperties_temp.lst
+echo "" > lists/mssql_security_publicperm_temp.lst
+echo "" > lists/mssql_security_groups_temp.lst
+echo "" > lists/mssql_security_logins_temp.lst
+echo "" > lists/mssql_security_auditlevel_temp.lst
+echo "" > lists/mssql_security_sqlserveraudit_temp.lst
+echo "" > lists/mssql_security_encryption_temp.lst
+
+#GET Hosts List
+for hst in `cat mssql_database_lists.lst | grep -v "#" | sort -u`
+        do
+	export hst=`echo ${hst} | cut -d ":" -f1`
+# GET Configuration Options
+	sqlcmd -U ${USERNAME_DB} -S ${hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getconfigoptions.sql -h-1 -W -w 999 -s"," -o "${hst}_temp.csv"
+	cat ${hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/mssql_security_configoptions_temp.lst
+        rm -rf ${hst}_temp.csv
+# GET Registry Informations        
+        sqlcmd -U ${USERNAME_DB} -S ${hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getregistryinfo.sql -h-1 -W -w 999 -s"," -o "${hst}_temp.csv"
+        cat ${hst}_temp.csv | grep -v "affected" | grep -v "The system cannot find the file specified" | grep -v "introuvable" | grep -Ev "^$" >> lists/mssql_security_registryinfo_temp.lst
+        rm -rf ${hst}_temp.csv
+# GET guest connect permission
+        sqlcmd -U ${USERNAME_DB} -S ${hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getguestconnect.sql -h-1 -W -w 999 -s"," -o "${hst}_temp.csv"
+        cat ${hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/mssql_security_guestconnect_temp.lst
+        rm -rf ${hst}_temp.csv
+# GET orphaned users
+        sqlcmd -U ${USERNAME_DB} -S ${hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getorphanedusers.sql -h-1 -W -w 999 -s"," -o "${hst}_temp.csv"
+        cat ${hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/mssql_security_orphanedusers_temp.lst
+        rm -rf ${hst}_temp.csv
+# GET DB properties informations
+        sqlcmd -U ${USERNAME_DB} -S ${hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getdbproperties.sql -h-1 -W -w 999 -s"," -o "${hst}_temp.csv"
+        cat ${hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/mssql_security_dbproperties_temp.lst
+        rm -rf ${hst}_temp.csv
+# GET public permissions informations
+        sqlcmd -U ${USERNAME_DB} -S ${hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getpublicperm.sql -h-1 -W -w 999 -s"," -o "${hst}_temp.csv"
+        cat ${hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/mssql_security_publicperm_temp.lst
+        rm -rf ${hst}_temp.csv
+# GET Groups informations
+        sqlcmd -U ${USERNAME_DB} -S ${hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getgroups.sql -h-1 -W -w 999 -s"," -o "${hst}_temp.csv"
+        cat ${hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/mssql_security_groups_temp.lst
+        rm -rf ${hst}_temp.csv
+# GET logins informations
+        sqlcmd -U ${USERNAME_DB} -S ${hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getlogins.sql -h-1 -W -w 999 -s"," -o "${hst}_temp.csv"
+        cat ${hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/mssql_security_logins_temp.lst
+        rm -rf ${hst}_temp.csv
+# GET auditlevel informations
+        sqlcmd -U ${USERNAME_DB} -S ${hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getauditlevel.sql -h-1 -W -w 999 -s"," -o "${hst}_temp.csv"
+        cat ${hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/mssql_security_auditlevel_temp.lst
+        rm -rf ${hst}_temp.csv		
+# GET SQL Server Audit informations
+        sqlcmd -U ${USERNAME_DB} -S ${hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getsqlserveraudit.sql -h-1 -W -w 999 -s"," -o "${hst}_temp.csv"
+        cat ${hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/mssql_security_sqlserveraudit_temp.lst
+        rm -rf ${hst}_temp.csv	
+# GET Encryption informations
+        sqlcmd -U ${USERNAME_DB} -S ${hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getencryption.sql -h-1 -W -w 999 -s"," -o "${hst}_temp.csv"
+        cat ${hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/mssql_security_encryption_temp.lst
+        rm -rf ${hst}_temp.csv
+done
+
+cat lists/mssql_security_configoptions_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' > lists/mssql_security_configoptions.lst
+cat lists/mssql_security_registryinfo_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' > lists/mssql_security_registryinfo.lst
+cat lists/mssql_security_guestconnect_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' > lists/mssql_security_guestconnect.lst
+cat lists/mssql_security_orphanedusers_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' > lists/mssql_security_orphanedusers.lst
+cat lists/mssql_security_dbproperties_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' > lists/mssql_security_dbproperties.lst
+cat lists/mssql_security_publicperm_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' > lists/mssql_security_publicperm.lst
+cat lists/mssql_security_groups_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' > lists/mssql_security_groups.lst
+cat lists/mssql_security_logins_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' > lists/mssql_security_logins.lst
+cat lists/mssql_security_auditlevel_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' > lists/mssql_security_auditlevel.lst
+cat lists/mssql_security_sqlserveraudit_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' > lists/mssql_security_sqlserveraudit.lst
+cat lists/mssql_security_encryption_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | grep -v "Invalid column" | grep -v "Msg 207, Level 16" | sed 's/\\/\//g' > lists/mssql_security_encryption.lst
+
+rm -rf lists/mssql_security_configoptions_temp.lst
+rm -rf lists/mssql_security_registryinfo_temp.lst
+rm -rf lists/mssql_security_guestconnect_temp.lst
+rm -rf lists/mssql_security_orphanedusers_temp.lst
+rm -rf lists/mssql_security_dbproperties_temp.lst
+rm -rf lists/mssql_security_publicperm_temp.lst
+rm -rf lists/mssql_security_groups_temp.lst
+rm -rf lists/mssql_security_logins_temp.lst
+rm -rf lists/mssql_security_auditlevel_temp.lst
+rm -rf lists/mssql_security_sqlserveraudit_temp.lst
+rm -rf lists/mssql_security_encryption_temp.lst

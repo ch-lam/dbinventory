@@ -1,0 +1,103 @@
+export ORACLE_HOME=/inventory/OracleClient/instantclient_23_9
+export TNS_ADMIN=/inventory/OracleClient/instantclient_23_9/network
+export LD_LIBRARY_PATH=$ORACLE_HOME
+export PATH=$PATH:$ORACLE_HOME
+export USERNAME_DB="monitoring"
+export PASSWORD_DB="F5t9TAcbjLTzhBNE69YeYBTx1BLgOZ"
+
+echo "" > lists/databases_size_usage_seg_temp.lst
+
+rm -rf lists/error_db_segs.lst
+
+for db_info in `cat oracle_database_lists.lst | grep -v "#" | sort -u`
+        do
+	export db=`echo $db_info | cut -d ';' -f3`
+	export licence_type=`echo $db_info | cut -d ';' -f2`
+        export db_env=`echo $db_info | cut -d ';' -f1`
+
+###CHECK CONNECT DB
+loginchk=`sqlplus dummy/user@${db} < /dev/null`
+loginchk2=` echo  $loginchk | grep -c ORA-01017`
+if [ ${loginchk2} -eq 1 ] ; then
+        export CONNECT_CHECK="OK"
+else
+        loginchk3=` echo "$loginchk" | grep "ORA-" | head -1`
+        if [ `echo ${loginchk3} | grep "ORA-01033" | wc -l` -eq 1 ]; then
+          USAGE=`echo "set feedback off;
+                       set heading off;
+                       SELECT select 'OK' from v\\$database a, v\\$instance b where a.DATABASE_ROLE='PHYSICAL STANDBY' and b.status='MOUNTED';" | sqlplus ${USERNAME_DB}/${PASSWORD_DB}@${db} `
+                        if [ `echo ${USAGE} | grep "OK" | wc -l` -eq 1 ]; then
+                                export CONNECT_CHECK="OK"
+                        else
+                                echo "${db}" >> lists/error_db.lst
+                        fi
+        else
+                echo "${db}" >> lists/error_db.lst
+        fi
+fi
+
+###LOOP ONLY IF SCRIPT CAN CONNECT TO DATABASES
+if [ `echo ${CONNECT_CHECK} | grep "OK" | wc -l` -eq 1 ]; then
+CONNECT_CHECK="NA"
+
+###CHECK STANDBY
+CHECK_STANDBY=`echo "set feedback off;
+                     set heading off;
+                     SELECT 'OK' from v\\$database where DATABASE_ROLE='PHYSICAL STANDBY';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} `
+
+###CHECK BROKER
+CHECK_BROKER_ON=`echo "set feedback off;
+                     set heading off;
+                     SELECT 'OK' from v\\$parameter where NAME='dg_broker_start' and lower(value)='true';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} `
+
+####CHECK PDB
+CHECK_VERSION=`echo "set feedback off;
+                     set heading off;
+                     select 'OK' from v\\$instance where substr(version,1,2) >= 12;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} `
+
+                     if [ `echo ${CHECK_VERSION} | grep "OK" | wc -l` -eq 1 ]; then
+                         CHECK_CONTAINER=`echo "set feedback off;
+                                                set heading off;
+                                                select distinct ('OK') from v\\$pdbs where CON_ID > 1;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} `
+                     fi
+####CHECK DATABASE RELEASE
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+CHECK_VERSION_DATABASES=`echo "set feedback off;
+                               set heading off;
+                               select 'VALUE'||version from v\\$instance;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}  | sed 's/VALUE//'g | grep "."`
+fi
+
+###### DB/PDB Segments Size List Info
+if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
+if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
+     echo "set pages0;
+           set feedback off;
+           set linesize 999;
+           select dbs.NAME||','||pdb.PDB_NAME||','||TABLESPACE_NAME||','||round(sum(cdb.bytes/1024)) from cdb_pdbs pdb, v\$database dbs, cdb_segments cdb where pdb.PDB_ID=cdb.CON_ID and pdb.PDB_NAME not like '%SEED%' group by dbs.NAME,pdb.PDB_NAME,cdb.TABLESPACE_NAME
+           order by 1;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}  >> lists/databases_size_usage_seg_temp.lst
+        else
+     echo "set pages0;
+           set feedback off;
+           set linesize 999;
+           select dbs.NAME||',NON_CONTAINER,'||seg.TABLESPACE_NAME||','||round(sum(seg.bytes/1024/1024)) from v\$database dbs, dba_segments seg group by dbs.NAME,seg.TABLESPACE_NAME order by 1;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}  >> lists/databases_size_usage_seg_temp.lst
+fi
+fi
+
+fi
+
+###CLEANUP CONTAINER CHECK
+CHECK_CONTAINER="NA"
+done
+
+##Cleanup TEMP FILE
+cat lists/databases_size_usage_seg_temp.lst | sort -u | sed '/^$/d' > lists/databases_size_usage_seg.lst
+rm -rf lists/databases_size_usage_seg_temp.lst
+
+
+
+###CHECK ERROR
+if [ -f lists/error_db_segs.lst ]; then
+       echo "Error to generate Inventory for databases below:
+             `cat lists/error_db.lst`" | mailx -s "Failed to generate Opsview Inventory" IT-DBA@chl.lu
+        exit 1
+fi

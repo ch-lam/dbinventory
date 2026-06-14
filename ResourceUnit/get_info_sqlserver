@@ -1,0 +1,84 @@
+export PATH=/opt/mssql-tools18/bin:${PATH}
+export USERNAME_DB="monitoring"
+export PASSWORD_DB="HY9Xine38wnkC2gLadd2YafJiz5gRw"
+
+cd /inventory/ResourceUnit
+rm -rf lists/hosts_sqlserver.lst
+rm -rf lists/db_sqlserver.lst
+rm -rf lists/bu_sqlserver.lst
+rm -rf lists/fileinfo.lst
+rm -rf lists/logininfo.lst
+rm -rf lists/userinfo.lst
+rm -rf lists/loginwoperm.lst
+rm -rf lists/validatelogin.lst
+
+#GET Hosts List
+for hst in `cat mssql_database_lists.lst | grep -v "#" | sort -u`
+        do
+        export mssql_hst=`echo ${hst} | cut -d ":" -f1`
+        export mssql_env=`echo ${hst} | cut -d ":" -f3`
+        export mssql_contract=`echo ${hst} | cut -d ":" -f4`
+        sqlcmd -U ${USERNAME_DB} -S ${mssql_hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getinstanceinfo.sql -h-1 -W -w 999 -s"," -o "${mssql_hst}_temp.csv"
+        cat ${mssql_hst}_temp.csv | grep -v "affected" | grep -Ev "^$" | sed s/$/,${mssql_env},${mssql_contract}/ >> lists/hosts_sqlserver_temp.lst
+        rm -rf ${mssql_hst}_temp.csv
+        cat lists/hosts_sqlserver_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' >> lists/hosts_sqlserver.lst
+        rm -rf lists/hosts_sqlserver_temp.lst
+
+
+##GET DB List
+        sqlcmd -U ${USERNAME_DB} -S ${mssql_hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getdbinfo.sql -h-1 -W -w 999 -s"," -o "${mssql_hst}_temp.csv"
+        cat ${mssql_hst}_temp.csv | grep -v "affected" | grep -Ev "^$" | sed s/$/,${mssql_env}/ >> lists/db_sqlserver_temp.lst
+        rm -rf ${mssql_hst}_temp.csv
+        cat lists/db_sqlserver_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' >> lists/db_sqlserver.lst
+        rm -rf lists/db_sqlserver_temp.lst
+
+##GET Backup information
+        sqlcmd -U ${USERNAME_DB} -S ${mssql_hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getbackupinfo.sql -h-1 -W -w 999 -s"," -o "${mssql_hst}_temp.csv"
+        cat ${mssql_hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/bu_sqlserver_temp.lst
+        rm -rf ${mssql_hst}_temp.csv
+        cat lists/bu_sqlserver_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' >> lists/bu_sqlserver.lst
+        rm -rf lists/bu_sqlserver_temp.lst
+
+#GET file infor
+        sqlcmd -U ${USERNAME_DB} -S ${mssql_hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getfileinfo.sql -h-1 -W -w 999 -s"," -o "${mssql_hst}_temp.csv"
+        cat ${mssql_hst}_temp.csv | grep -v "affected" | grep -Ev "^$" | sed s/$/,${mssql_env}/ >> lists/fileinfo_temp.lst
+        rm -rf ${mssql_hst}_temp.csv
+        cat lists/fileinfo_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' >> lists/fileinfo.lst
+        rm -rf lists/fileinfo_temp.lst
+
+
+#GET login infor
+        sqlcmd -U ${USERNAME_DB} -S ${mssql_hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getloginsinfo.sql -h-1 -W -w 999 -s"," -o "${mssql_hst}_temp.csv"
+        cat ${mssql_hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/logininfo_temp.lst
+        rm -rf ${mssql_hst}_temp.csv
+        cat lists/logininfo_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' >> lists/logininfo.lst
+        rm -rf lists/logininfo_temp.lst
+
+
+#GET user infor
+        sqlcmd -U ${USERNAME_DB} -S ${mssql_hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_getuserinfo.sql -h-1 -W -w 999 -s"," -o "${mssql_hst}_temp.csv"
+        cat ${mssql_hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/userinfo_temp.lst
+        rm -rf ${mssql_hst}_temp.csv
+        cat lists/userinfo_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' >> lists/userinfo.lst
+        rm -rf lists/userinfo_temp.lst
+
+#GET login without permission
+        sqlcmd -U ${USERNAME_DB} -S ${mssql_hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_loginwithoutperm.sql -h-1 -W -w 999 -s"," -o "${mssql_hst}_temp.csv"
+        cat ${mssql_hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/loginwoperm_temp.lst
+        rm -rf ${mssql_hst}_temp.csv
+        cat lists/loginwoperm_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' >> lists/loginwoperm.lst
+        rm -rf lists/loginwoperm_temp.lst
+
+#GET validate login
+        sqlcmd -U ${USERNAME_DB} -S ${mssql_hst} -P ${PASSWORD_DB} -C -i /inventory/ResourceUnit/sql/mssql_validatelogin.sql -h-1 -W -w 999 -s"," -o "${mssql_hst}_temp.csv"
+        cat ${mssql_hst}_temp.csv | grep -v "affected" | grep -Ev "^$" >> lists/validatelogin_temp.lst
+        rm -rf ${mssql_hst}_temp.csv
+        cat lists/validatelogin_temp.lst | grep -Ev "^$" | grep -v "Sqlcmd" | sed 's/\\/\//g' >> lists/validatelogin.lst
+        rm -rf lists/validatelogin_temp.lst
+done
+
+#GET IPAM COMMENT
+        sqlcmd -U ${USERNAME_DB} -S INFRASQL -P ${PASSWORD_DB} -C -Q "SELECT Hostname,REPLACE(REPLACE(comment, CHAR(13), ''), CHAR(10), '') FROM CHL_IPAM.dbo.Hosts;" -h-1 -W -w 999 -s"," -o "lists/chl_ipam_comment_temp.lst"
+	sed -i '/^$/d' lists/chl_ipam_comment_temp.lst
+        cat lists/chl_ipam_comment_temp.lst | grep -v "affected"  | grep -Ev "^$" | sed "s/'//g" > lists/chl_ipam_comment.lst
+	rm -rf lists/chl_ipam_comment_temp.lst

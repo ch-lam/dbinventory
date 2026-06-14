@@ -1,0 +1,40 @@
+Changing password for monitoring
+DEV,CPU,Ora-DEV,4,15,Linux x86 64-bit
+DEV,CPU,OraLabo-Dev,2,15,Linux x86 64-bit
+DEV,CPU,ORARETRO-DEV,2,3,Linux x86 64-bit
+ERROR:
+Help: https://docs.oracle.com/error-help/db/ora-28000/
+Help: https://docs.oracle.com/error-help/db/ora-28001/
+Help: https://docs.oracle.com/error-help/db/sp2-0157/
+Help: https://docs.oracle.com/error-help/db/sp2-0306/
+Help: https://docs.oracle.com/error-help/db/sp2-0650/
+MGT,MGT,OEMSRV,4,14,Linux x86 64-bit
+New password: 
+ORA-28000: The account is locked.
+ORA-28001: the password has expired
+Password unchanged
+PRD,CPU,ORAAPPSDBS01-PI,2,19,Linux x86 64-bit
+PRD,CPU,OraCyberlab-Prod,4,9,Linux x86 64-bit
+PRD,CPU,OraEnnov-PROD,2,3,Linux x86 64-bit
+PRD,CPU,OraHydMedia-Prod,2,15,Linux x86 64-bit
+PRD,CPU,OraLabo-Prod,5,19,Linux x86 64-bit
+PRD,CPU,ORALEGACY,2,7,Linux x86 64-bit
+PRD,CPU,OraMirth-Prod,1,7,Linux x86 64-bit
+PRD,CPU,ORARETRO-PROD,2,3,Linux x86 64-bit
+PRD,CPU,OraSherlock-Prod,1,7,Linux x86 64-bit
+PRD,SAP,BWCHEMPROD,4,39,Linux x86 64-bit
+PRD,SAP,SAPBWL01-PI,8,49,Linux x86 64-bit
+PRD,SAP,SAPBWN01-PD,4,39,Linux x86 64-bit
+PRD,SAP,SAPBWN01-TD,2,25,Linux x86 64-bit
+PRD,SAP,SAPCHLDB,12,196,Linux x86 64-bit
+      <proxy> ::= <proxyuser>[<username>][/<password>][@<connect_identifier>]
+Retype new password: 
+SP2-0157: unable to CONNECT to ORACLE after 3 attempts, exiting SQL*Plus
+SP2-0306: Invalid option.
+SP2-0650: New passwords do not match
+TST,CPU,Ora-DEV,4,15,Linux x86 64-bit
+TST,CPU,OraLabo-Dev,2,15,Linux x86 64-bit
+TST,SAP,SAPCHCDB,4,25,Linux x86 64-bit
+UAT,CPU,ORARETRO-UAT,2,3,Linux x86 64-bit
+Usage: CONN[ECT] [{logon|/|proxy} [AS {SYSDBA|SYSOPER|SYSASM|SYSBACKUP|SYSDG|SYSKM|SYSRAC}] [edition=value]]
+where <logon> ::= <username>[/<password>][@<connect_identifier>]
