@@ -1,321 +1,268 @@
-export ORACLE_HOME=/inventory/OracleClient/instantclient_23_9
-export TNS_ADMIN=/inventory/OracleClient/instantclient_23_9/network
-export LD_LIBRARY_PATH=$ORACLE_HOME
-export PATH=$PATH:$ORACLE_HOME
-export USERNAME_DB="monitoring"
-export PASSWORD_DB="*************************************"
+#!/bin/bash
+# =============================================================================
+# get_info_oracle_security — collecte sécurité Oracle
+# =============================================================================
+set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=get_info_oracle_common
+source "${SCRIPT_DIR}/get_info_oracle_common"
 
-echo "" > lists/databases_security_parameter_temp.lst
-echo "" > lists/databases_security_profile_temp.lst
-echo "" > lists/databases_security_default_profile_temp.lst
-echo "" > lists/databases_security_admin_high_privs_temp.lst
-echo "" > lists/databases_security_high_role_privs_temp.lst
-echo "" > lists/databases_security_high_sys_privs_temp.lst
-echo "" > lists/databases_security_high_tab_privs_temp.lst
-echo "" > lists/databases_security_audit_enable_temp.lst
-echo "" > lists/databases_security_default_user_pwd_temp.lst
-echo "" > lists/databases_security_usermig_table_exist_temp.lst
-echo "" > lists/databases_security_tablespace_temp.lst
-echo "" > lists/databases_security_network_encryption_temp.lst
+init_temps sec_parameter sec_network_enc sec_profile sec_default_profile \
+           sec_admin_high_privs sec_high_role_privs sec_high_sys_privs    \
+           sec_high_tab_privs sec_default_user_pwd sec_usermig            \
+           sec_tablespace sec_audit
+rm -f "${LIST_DIR}/error_db.lst"
 
-rm -rf lists/error_security_db.lst
-for db in `cat oracle_database_lists.lst | grep -v "#" | cut -d ";" -f3 | sort -u`
-                do
-###CHECK CONNECT DB
-loginchk=`sqlplus dummy/user@${db} < /dev/null`
-loginchk2=` echo  $loginchk | grep -c ORA-01017`
-if [ ${loginchk2} -eq 1 ] ; then
-        export CONNECT_CHECK="OK"
-else
-        loginchk3=` echo "$loginchk" | grep "ORA-" | head -1`
-        if [ `echo ${loginchk3} | grep "ORA-01033" | wc -l` -eq 1 ]; then
-          USAGE=`echo "set feedback off;
-                       set heading off;
-                       SELECT select 'OK' from v\\$database a, v\\$instance b where a.DATABASE_ROLE='PHYSICAL STANDBY' and b.status='MOUNTED';" | sqlplus ${USERNAME_DB}/${PASSWORD_DB}@${db}`
-                        if [ `echo ${USAGE} | grep "OK" | wc -l` -eq 1 ]; then
-                                export CONNECT_CHECK="OK"
-                        else
-                                echo "${db}" >> lists/error_security_db.lst
-                        fi
-        else
-                echo "${db}" >> lists/error_security_db.lst
-        fi
-fi
+# ── Collecte par base ─────────────────────────────────────────────────────────
+while IFS=';' read -r db_env lic db; do
+    [[ -z "${db:-}" ]] && continue
+    log "Connexion : ${db} [${db_env}/${lic}]"
 
-###LOOP ONLY IF SCRIPT CAN CONNECT TO DATABASES
-if [ `echo ${CONNECT_CHECK} | grep "OK" | wc -l` -eq 1 ]; then
-export CONNECT_CHECK="NA"
+    status_raw=$(status_check "${db}") || { log_err "${db}"; continue; }
+    status=$(printf '%s\n' "${status_raw}" | grep -E '^(PRIMARY|PHYSICAL)' | head -1)
+    [[ -z "${status}" ]] && { log_err "${db}"; continue; }
 
-###CHECK STANDBY
-export CHECK_STANDBY=`echo "set feedback off;
-                     set heading off;
-                     SELECT 'OK' from v\\$database where DATABASE_ROLE='PHYSICAL STANDBY';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}`
-####CHECK PDB
-export CHECK_VERSION=`echo "set feedback off;
-                     set heading off;
-                     select 'OK' from v\\$instance where version like '12.%' or version like '18%' or version like '19%';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}`
-                     if [ `echo ${CHECK_VERSION} | grep "OK" | wc -l` -eq 1 ]; then
-                         export CHECK_CONTAINER=`echo "set feedback off;
-                                                set heading off;
-                                                select distinct ('OK') from v\\$pdbs where CON_ID > 1;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db}`
-                     fi
+    IFS=',' read -r db_role is_cdb db_ver <<< "${status}"
+    IS_CDB=$([[ "${is_cdb}" == "YES" ]] && echo "YES" || echo "NO")
+    log "  rôle=${db_role} cdb=${IS_CDB} ver=${db_ver}"
 
+    # Standby : aucune collecte sécurité
+    [[ "${db_role}" == *STANDBY* ]] && continue
 
-export CHECK_VERSION_DATABASES=`echo "set feedback off;
-                               set heading off;
-                               select 'VALUE'||version from v\\$instance;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} | sed 's/VALUE//'g | grep "."`
-fi
+    # ── Paramètres et chiffrement réseau (tous) ───────────────────────────────
+    sql_run "${db}" <<SQL >> /dev/null
+SPOOL ${LIST_DIR}/sec_parameter_temp.lst APPEND
+SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs
+WHERE  lower(prm.name) IN ('o7_dictionary_accessibility','sec_return_server_release_banner',
+       'remote_os_authent','remote_os_roles','os_roles','audit_trail','audit_sys_operations',
+       'sec_max_failed_login_attempts','sec_protocol_error_trace_action','resource_limit',
+       'sec_case_sensitive_logon','sec_protocol_error_further_action','utl_file_dir','pdb_os_credential')
+UNION ALL
+SELECT dbs.NAME||','||prm.VALUE||','||prm.PARAMETER FROM v\$option prm, v\$database dbs
+WHERE  prm.PARAMETER = 'Unified Auditing'
+UNION ALL
+SELECT dbs.NAME||',4,_sys_logon_delay' FROM v\$database dbs
+WHERE  EXISTS (SELECT 1 FROM v\$parameter WHERE lower(name)='_sys_logon_delay' AND value='4')
+UNION ALL
+SELECT dbs.NAME||',0,_sys_logon_delay' FROM v\$database dbs
+WHERE  NOT EXISTS (SELECT 1 FROM v\$parameter WHERE lower(name)='_sys_logon_delay' AND value='4');
+SPOOL OFF
+SPOOL ${LIST_DIR}/sec_network_enc_temp.lst APPEND
+SELECT dbs.NAME||','||NVL(REPLACE(sess.NETWORK_SERVICE_BANNER,' ','_'),'EMPTY')
+FROM   v\$database dbs, v\$session_connect_info sess
+WHERE  sess.SID = SYS_CONTEXT('USERENV','SID')
+  AND  LOWER(sess.NETWORK_SERVICE_BANNER) LIKE '%encryption%service%adapter%';
+SPOOL OFF
+SQL
 
-if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
-######Database Parameter Info
-    echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='o7_dictionary_accessibility'
-          UNION ALL SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='sec_return_server_release_banner'
-          UNION ALL SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='remote_os_authent'
-          UNION ALL SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='remote_os_roles'
-          UNION ALL SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='os_roles'
-          UNION ALL SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='audit_trail'
-          UNION ALL SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='audit_sys_operations'
-          UNION ALL SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='sec_max_failed_login_attempts'
-          UNION ALL SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='sec_protocol_error_trace_action'
-          UNION ALL SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='resource_limit'
-          UNION ALL SELECT dbs.NAME||','||NVL(prm.VALUE, 'EMPTY')||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='pdb_os_credential'
-          UNION ALL SELECT  * from (
-             SELECT dbs.NAME||',4,_sys_logon_delay' FROM v\$database dbs where 'OK' in (SELECT 'OK' as result FROM v\$parameter where lower(name)='_sys_logon_delay' and value='4')
-             UNION ALL
-             SELECT dbs.NAME||',0,_sys_logon_delay' FROM v\$database dbs where 'OK' not in (SELECT 'OK' as result FROM v\$parameter where lower(name)='_sys_logon_delay' and value='4'))
-          UNION ALL SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='sec_case_sensitive_logon'
-          UNION ALL SELECT dbs.NAME||','||REPLACE(prm.VALUE,',','')||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='sec_protocol_error_further_action'
-          UNION ALL SELECT dbs.NAME||','||NVL(prm.VALUE, 'EMPTY')||','||prm.name FROM v\$parameter prm, v\$database dbs where lower(prm.name)='utl_file_dir' UNION ALL SELECT dbs.NAME||',EMPTY,utl_file_dir' from v\$instance inst, v\$database dbs where inst.version like '18%' or inst.version like '19%'
-          UNION ALL SELECT dbs.NAME||','||prm.VALUE||','||prm.parameter from v\$option prm, v\$database dbs where prm.PARAMETER = 'Unified Auditing' UNION ALL SELECT  dbs.NAME||',N/A,Unified Auditing' from v\$instance inst, v\$database dbs where inst.version like '11%' or inst.version like '10%';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_parameter_temp.lst
+    # ── Profils ───────────────────────────────────────────────────────────────
+    if [[ "${IS_CDB}" == "YES" ]]; then
+        sql_run "${db}" <<SQL >> /dev/null
+SPOOL ${LIST_DIR}/sec_profile_temp.lst APPEND
+SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.profile||','||cdb.resource_name||','||cdb.limit
+FROM   v\$database dbs, cdb_profiles cdb, dba_pdbs pdbs
+WHERE  cdb.con_id = pdbs.pdb_id AND cdb.con_id <> 2;
+SPOOL OFF
+SPOOL ${LIST_DIR}/sec_default_profile_temp.lst APPEND
+SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.username||','||cdb.profile||','||cdb.oracle_maintained
+FROM   v\$database dbs, cdb_users cdb, dba_pdbs pdbs
+WHERE  cdb.con_id = pdbs.pdb_id AND cdb.con_id <> 2
+UNION ALL
+SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.NAME||','||cdb.profile||',N'
+FROM   v\$database dbs, cdb_xs_users cdb, dba_pdbs pdbs
+WHERE  cdb.con_id = pdbs.pdb_id AND cdb.con_id <> 2 AND cdb.name NOT IN ('XSGUEST');
+SPOOL OFF
+SPOOL ${LIST_DIR}/sec_usermig_temp.lst APPEND
+SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.OWNER||','||cdb.TABLE_NAME
+FROM   v\$database dbs, CDB_TABLES cdb, dba_pdbs pdbs
+WHERE  cdb.con_id = pdbs.pdb_id AND cdb.con_id <> 2
+  AND  cdb.TABLE_NAME='USER\$MIG' AND cdb.OWNER='SYS';
+SPOOL OFF
+SQL
+    else
+        sql_run "${db}" <<SQL >> /dev/null
+SPOOL ${LIST_DIR}/sec_profile_temp.lst APPEND
+SELECT dbs.NAME||','||'NON CONTAINER,'||prf.profile||','||prf.resource_name||','||prf.limit
+FROM   v\$database dbs, dba_profiles prf;
+SPOOL OFF
+SPOOL ${LIST_DIR}/sec_default_profile_temp.lst APPEND
+SELECT dbs.NAME||','||'NON CONTAINER,'||usr.username||','||usr.profile||','||
+       NVL(usr.oracle_maintained,'NA')
+FROM   v\$database dbs, dba_users usr;
+SPOOL OFF
+SPOOL ${LIST_DIR}/sec_usermig_temp.lst APPEND
+SELECT dbs.NAME||','||'NON CONTAINER,'||tbs.OWNER||','||tbs.TABLE_NAME
+FROM   v\$database dbs, DBA_TABLES tbs
+WHERE  tbs.TABLE_NAME='USER\$MIG' AND tbs.OWNER='SYS';
+SPOOL OFF
+SQL
+    fi
 
-######Database Get Network Encryption State
-if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
-        echo "set pages0;
-                set linesize 900;
-                set feedback off;
-                select dbs.NAME||','||NVL(replace(sess.NETWORK_SERVICE_BANNER,' ','_'), 'EMPTY') from v\$database dbs, v\$session_connect_info sess where sess.SID = sys_context('USERENV','SID') and lower(sess.NETWORK_SERVICE_BANNER) like '%encryption%service%adapter%';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_network_encryption_temp.lst
-fi
+    # ── Privilèges élevés ─────────────────────────────────────────────────────
+    sql_run "${db}" <<SQL >> /dev/null
+SPOOL ${LIST_DIR}/sec_admin_high_privs_temp.lst APPEND
+SELECT dbs.NAME||','||pwd.username FROM v\$database dbs, v\$pwfile_users pwd ORDER BY 1;
+SPOOL OFF
+SQL
 
-######Database Profiles Info
-if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
-    echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.profile||','||cdb.resource_name||','||cdb.limit FROM v\$database dbs, cdb_profiles cdb, dba_pdbs pdbs where cdb.con_id=pdbs.pdb_id and cdb.con_id <> 2;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_profile_temp.lst
-        else
-    echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||'NON CONTAINER,'||prf.profile||','||prf.resource_name||','||prf.limit FROM v\$database dbs, dba_profiles prf;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_profile_temp.lst
-fi
+    if [[ "${IS_CDB}" == "YES" ]]; then
+        sql_run "${db}" <<SQL >> /dev/null
+SPOOL ${LIST_DIR}/sec_high_role_privs_temp.lst APPEND
+SELECT dbs.NAME||','||pdbs.pdb_name||','||r.grantee||','||r.granted_role
+FROM   v\$database dbs, cdb_role_privs r, dba_pdbs pdbs
+WHERE  r.con_id = pdbs.pdb_id AND r.con_id <> 2
+  AND  r.GRANTED_ROLE IN ('DELETE_CATALOG_ROLE','SELECT_CATALOG_ROLE','EXECUTE_CATALOG_ROLE','DBA');
+SPOOL OFF
+SPOOL ${LIST_DIR}/sec_high_sys_privs_temp.lst APPEND
+SELECT dbs.NAME||','||pdbs.pdb_name||','||p.grantee||','||p.privilege
+FROM   v\$database dbs, cdb_sys_privs p, dba_pdbs pdbs
+WHERE  p.con_id = pdbs.pdb_id AND p.con_id <> 2
+  AND  p.privilege IN ('SELECT ANY DICTIONARY','SELECT ANY TABLE','AUDIT SYSTEM',
+       'EXEMPT ACCESS POLICY','BECOME USER','CREATE_PROCEDURE','ALTER SYSTEM',
+       'CREATE ANY LIBRARY','CREATE LIBRARY','GRANT ANY OBJECT PRIVILEGE',
+       'GRANT ANY ROLE','GRANT ANY PRIVILEGE','CREATE EXTERNAL JOB');
+SPOOL OFF
+SPOOL ${LIST_DIR}/sec_high_tab_privs_temp.lst APPEND
+SELECT dbs.NAME||','||pdbs.pdb_name||','||p.grantee||','||p.TABLE_NAME
+FROM   v\$database dbs, cdb_tab_privs p, dba_pdbs pdbs
+WHERE  p.con_id = pdbs.pdb_id AND p.con_id <> 2
+  AND  p.grantee = 'PUBLIC' AND p.privilege = 'EXECUTE'
+  AND  p.TABLE_NAME IN ('UTL_FILE','UTL_INADDR','UTL_MAIL','UTL_SMTP','UTL_HTTP',
+       'UTL_ORAMTS','UTL_DBWS','HTTPURITYPE','DBMS_SYS_SQL','DBMS_BACKUP_RESTORE',
+       'DBMS_AQADM_SYSCALLS','DBMS_REPCAT_SQL_UTL','INITJVMAUX','DBMS_STREAMS_ADM_UTL',
+       'DBMS_AQADM_SYS','DBMS_STREAMS_RPC','DBMS_PRVTAQIM','LTADM','WWV_DBMS_SQL',
+       'WWV_EXECUTE_IMMEDIATE','DBMS_IJOB','DBMS_FILE_TRANSFER')
+UNION ALL
+SELECT dbs.NAME||','||pdbs.pdb_name||','||p.TABLE_NAME||','||p.PRIVILEGE||' TO '||p.grantee
+FROM   v\$database dbs, cdb_tab_privs p, dba_pdbs pdbs
+WHERE  p.con_id = pdbs.pdb_id AND p.con_id <> 2
+  AND  p.grantee = 'PUBLIC' AND p.PRIVILEGE = 'INHERIT PRIVILEGES' AND p.TABLE_NAME = p.GRANTOR;
+SPOOL OFF
+SPOOL ${LIST_DIR}/sec_default_user_pwd_temp.lst APPEND
+SELECT dbs.NAME||','||'CONTAINER,'||usr.USERNAME
+FROM   v\$database dbs, DBA_USERS_WITH_DEFPWD usr WHERE USERNAME NOT LIKE '%XS\$NULL%';
+SPOOL OFF
+SQL
+    else
+        sql_run "${db}" <<SQL >> /dev/null
+SPOOL ${LIST_DIR}/sec_high_role_privs_temp.lst APPEND
+SELECT dbs.NAME||','||'NON CONTAINER,'||r.grantee||','||r.GRANTED_ROLE
+FROM   v\$database dbs, dba_role_privs r
+WHERE  r.GRANTED_ROLE IN ('DELETE_CATALOG_ROLE','SELECT_CATALOG_ROLE','EXECUTE_CATALOG_ROLE','DBA');
+SPOOL OFF
+SPOOL ${LIST_DIR}/sec_high_sys_privs_temp.lst APPEND
+SELECT dbs.NAME||','||'NON CONTAINER,'||p.grantee||','||p.privilege
+FROM   v\$database dbs, dba_sys_privs p
+WHERE  p.privilege IN ('SELECT ANY DICTIONARY','SELECT ANY TABLE','AUDIT SYSTEM',
+       'EXEMPT ACCESS POLICY','BECOME USER','CREATE_PROCEDURE','ALTER SYSTEM',
+       'CREATE ANY LIBRARY','CREATE LIBRARY','GRANT ANY OBJECT PRIVILEGE',
+       'GRANT ANY ROLE','GRANT ANY PRIVILEGE','CREATE EXTERNAL JOB');
+SPOOL OFF
+SPOOL ${LIST_DIR}/sec_high_tab_privs_temp.lst APPEND
+SELECT dbs.NAME||','||'NON CONTAINER,'||p.grantee||','||p.TABLE_NAME
+FROM   v\$database dbs, dba_tab_privs p
+WHERE  p.grantee = 'PUBLIC' AND p.privilege = 'EXECUTE'
+  AND  p.TABLE_NAME IN ('UTL_FILE','UTL_INADDR','UTL_MAIL','UTL_SMTP','UTL_HTTP',
+       'UTL_ORAMTS','UTL_DBWS','HTTPURITYPE','DBMS_SYS_SQL','DBMS_BACKUP_RESTORE',
+       'DBMS_AQADM_SYSCALLS','DBMS_REPCAT_SQL_UTL','INITJVMAUX','DBMS_STREAMS_ADM_UTL',
+       'DBMS_AQADM_SYS','DBMS_STREAMS_RPC','DBMS_PRVTAQIM','LTADM','WWV_DBMS_SQL',
+       'WWV_EXECUTE_IMMEDIATE','DBMS_IJOB','DBMS_FILE_TRANSFER')
+UNION ALL
+SELECT dbs.NAME||','||'NON CONTAINER,'||','||p.TABLE_NAME||','||p.PRIVILEGE||' TO '||p.grantee
+FROM   v\$database dbs, dba_tab_privs p
+WHERE  p.grantee = 'PUBLIC' AND p.PRIVILEGE = 'INHERIT PRIVILEGES' AND p.TABLE_NAME = p.GRANTOR;
+SPOOL OFF
+SPOOL ${LIST_DIR}/sec_default_user_pwd_temp.lst APPEND
+SELECT dbs.NAME||','||'NON CONTAINER,'||usr.USERNAME
+FROM   v\$database dbs, DBA_USERS_WITH_DEFPWD usr WHERE USERNAME NOT LIKE '%XS\$NULL%';
+SPOOL OFF
+SQL
+    fi
 
-######CHECK USER$MIG TABLE EXIST
-if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
-    echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.OWNER||','||cdb.TABLE_NAME FROM v\$database dbs, CDB_TABLES cdb, dba_pdbs pdbs where cdb.con_id=pdbs.pdb_id and cdb.con_id <> 2 and cdb.TABLE_NAME='USER\$MIG' AND cdb.OWNER='SYS';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_usermig_table_exist_temp.lst
-        else
-    echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||'NON CONTAINER,'||tbs.OWNER||','||tbs.TABLE_NAME FROM v\$database dbs, DBA_TABLES tbs WHERE tbs.TABLE_NAME='USER\$MIG' AND tbs.OWNER='SYS';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_usermig_table_exist_temp.lst
-fi
+    # ── Tablespaces chiffrés (primaire uniquement) ────────────────────────────
+    if [[ "${IS_CDB}" == "YES" ]]; then
+        sql_run "${db}" <<SQL >> /dev/null
+SPOOL ${LIST_DIR}/sec_tablespace_temp.lst APPEND
+SELECT dbs.NAME||','||pdbs.pdb_name||','||ts.tablespace_name||','||ts.encrypted
+FROM   v\$database dbs, cdb_tablespaces ts, dba_pdbs pdbs
+WHERE  ts.con_id = pdbs.pdb_id AND ts.con_id <> 2;
+SPOOL OFF
+SQL
+    else
+        sql_run "${db}" <<SQL >> /dev/null
+SPOOL ${LIST_DIR}/sec_tablespace_temp.lst APPEND
+SELECT dbs.NAME||','||'NON CONTAINER,'||ts.tablespace_name||','||ts.encrypted
+FROM   v\$database dbs, dba_tablespaces ts;
+SPOOL OFF
+SQL
+    fi
 
-
-######Database User Default Profile / Default Account Info
-if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
-echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.username||','||cdb.profile||','||cdb.oracle_maintained FROM v\$database dbs, cdb_users cdb, dba_pdbs pdbs where cdb.con_id=pdbs.pdb_id and cdb.con_id <> 2 UNION ALL SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.NAME||','||cdb.profile||',N' FROM v\$database dbs, cdb_xs_users cdb, dba_pdbs pdbs where cdb.con_id=pdbs.pdb_id and cdb.con_id <> 2 and cdb.name not in ('XSGUEST');"| sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_default_profile_temp.lst
-        else
- if [ `echo ${CHECK_VERSION_DATABASES} | egrep -v "11|10" | wc -l` -eq 1 ]; then
-   echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||'NON CONTAINER,'||usr.username||','||usr.profile||','||usr.oracle_maintained FROM v\$database dbs, dba_users usr;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_default_profile_temp.lst
-   else
-   echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||'NON CONTAINER,'||usr.username||','||usr.profile||','||'NA' FROM v\$database dbs, dba_users usr;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_default_profile_temp.lst
-fi
-fi
-
-
-######Database Admin High Privs Info
-echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          select dbs.NAME||','||pwd.username from v\$database dbs, v\$pwfile_users pwd order by 1;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_admin_high_privs_temp.lst
-
-
-######Database High Privs Roles Info
-if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
-echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||pdbs.pdb_name||','||rlprivs.grantee||','||rlprivs.granted_role FROM v\$database dbs, cdb_role_privs rlprivs, dba_pdbs pdbs where rlprivs.con_id=pdbs.pdb_id and rlprivs.con_id <> 2 and rlprivs.GRANTED_ROLE in ('DELETE_CATALOG_ROLE','SELECT_CATALOG_ROLE','EXECUTE_CATALOG_ROLE','DBA');" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_high_role_privs_temp.lst
-        else
-echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||'NON CONTAINER,'||rlprivs.grantee||','||rlprivs.GRANTED_ROLE FROM v\$database dbs, dba_role_privs rlprivs where rlprivs.GRANTED_ROLE in ('DELETE_CATALOG_ROLE','SELECT_CATALOG_ROLE','EXECUTE_CATALOG_ROLE','DBA'); " | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_high_role_privs_temp.lst
-fi
-
-
-######Database High Privs Sys Info
-if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
-     echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||pdbs.pdb_name||','||privs.grantee||','||privs.privilege FROM v\$database dbs, cdb_sys_privs privs, dba_pdbs pdbs where privs.con_id=pdbs.pdb_id and privs.con_id <> 2 and privs.privilege in ('SELECT ANY DICTIONARY','SELECT ANY TABLE','AUDIT SYSTEM','EXEMPT ACCESS POLICY','BECOME USER','CREATE_PROCEDURE','ALTER SYSTEM','CREATE ANY LIBRARY','CREATE LIBRARY','GRANT ANY OBJECT PRIVILEGE','GRANT ANY ROLE','GRANT ANY PRIVILEGE','CREATE EXTERNAL JOB');" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_high_sys_privs_temp.lst
-        else
-     echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||'NON CONTAINER,'||privs.grantee||','||privs.privilege FROM v\$database dbs, dba_sys_privs privs where privs.privilege in ('SELECT ANY DICTIONARY','SELECT ANY TABLE','AUDIT SYSTEM','EXEMPT ACCESS POLICY','BECOME USER','CREATE_PROCEDURE','ALTER SYSTEM','CREATE ANY LIBRARY','CREATE LIBRARY','GRANT ANY OBJECT PRIVILEGE','GRANT ANY ROLE','GRANT ANY PRIVILEGE','CREATE EXTERNAL JOB');" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_high_sys_privs_temp.lst
-fi
-
-
-######Database High Privs Tab Info
-if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
-    echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||pdbs.pdb_name||','||privs.grantee||','||privs.table_name FROM  v\$database dbs, cdb_tab_privs privs, dba_pdbs pdbs where privs.con_id=pdbs.pdb_id and privs.con_id <> 2 and privs.grantee='PUBLIC' and privs.TABLE_NAME in ('UTL_FILE','UTL_INADDR','UTL_INADDR','UTL_MAIL','UTL_SMTP','UTL_HTTP','UTL_ORAMTS','UTL_DBWS','HTTPURITYPE','DBMS_SYS_SQL','DBMS_BACKUP_RESTORE','DBMS_AQADM_SYSCALLS','DBMS_REPCAT_SQL_UTL','INITJVMAUX','DBMS_STREAMS_ADM_UTL','DBMS_AQADM_SYS','DBMS_STREAMS_RPC','DBMS_PRVTAQIM','LTADM','WWV_DBMS_SQL','WWV_EXECUTE_IMMEDIATE','DBMS_IJOB','DBMS_FILE_TRANSFER') and privs.privilege='EXECUTE'
-union all
-SELECT dbs.NAME||','||pdbs.pdb_name||','||privs.TABLE_NAME||','||privs.PRIVILEGE||' TO '||privs.grantee FROM  v\$database dbs, cdb_tab_privs privs, dba_pdbs pdbs where privs.con_id=pdbs.pdb_id and privs.con_id <> 2 and privs.grantee='PUBLIC'  and privs.PRIVILEGE ='INHERIT PRIVILEGES' and privs.TABLE_NAME=privs.GRANTOR;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_high_tab_privs_temp.lst
-        else
-    echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||'NON CONTAINER,'||privs.grantee||','||privs.TABLE_NAME FROM v\$database dbs, dba_tab_privs privs where privs.grantee='PUBLIC' and privs.TABLE_NAME in ('UTL_FILE','UTL_INADDR','UTL_INADDR','UTL_MAIL','UTL_SMTP','UTL_HTTP','UTL_ORAMTS','UTL_DBWS','HTTPURITYPE','DBMS_SYS_SQL','DBMS_BACKUP_RESTORE','DBMS_AQADM_SYSCALLS','DBMS_REPCAT_SQL_UTL','INITJVMAUX','DBMS_STREAMS_ADM_UTL','DBMS_AQADM_SYS','DBMS_STREAMS_RPC','DBMS_PRVTAQIM','LTADM','WWV_DBMS_SQL','WWV_EXECUTE_IMMEDIATE','DBMS_IJOB','DBMS_FILE_TRANSFER') and privs.privilege='EXECUTE'
-union all
-SELECT dbs.NAME||','||'NON CONTAINER,'||','||privs.TABLE_NAME||','||privs.PRIVILEGE||' TO '||privs.grantee FROM  v\$database dbs, dba_tab_privs privs where privs.grantee='PUBLIC' and privs.PRIVILEGE ='INHERIT PRIVILEGES' and privs.TABLE_NAME=privs.GRANTOR;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_high_tab_privs_temp.lst
-fi
-
-
-######Database Defautlt Password Info
-if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
-    echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||'CONTAINER,','||usr.USERNAME FROM  v\$database dbs, DBA_USERS_WITH_DEFPWD usr where USERNAME NOT LIKE '%XS\$NULL%';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_default_user_pwd_temp.lst
-        else
-    echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||'NON CONTAINER,'||usr.USERNAME FROM v\$database dbs, DBA_USERS_WITH_DEFPWD usr where USERNAME NOT LIKE '%XS\$NULL%';" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_default_user_pwd_temp.lst
-fi
-
-###### Check Encrypted Tablespace
-if [ `echo ${CHECK_STANDBY} | grep "OK" | wc -l` -eq 0 ]; then
-if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
-echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.tablespace_name||','||cdb.encrypted FROM v\$database dbs, cdb_tablespaces cdb, dba_pdbs pdbs where cdb.con_id=pdbs.pdb_id and cdb.con_id <> 2;"| sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_tablespace_temp.lst
-   else
-   echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.NAME||','||'NON CONTAINER,'||tbs.tablespace_name||','||tbs.encrypted FROM v\$database dbs, dba_tablespaces tbs;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_tablespace_temp.lst
-fi
-fi
-
-
-###### Check Auditing Configure
- if [ `echo ${CHECK_VERSION_DATABASES} | egrep -v "11|10" | wc -l` -eq 1 ]; then
-                if [ `echo ${CHECK_CONTAINER} | grep "OK" | wc -l` -eq 1 ]; then
-   echo "set pages0;
-         set linesize 900;
-         set feedback off;
-         select dbs.name||','||pol.PDB_NAME||',ORA_CIS_RECOMMENDATIONS,1'
-from (select pdbs.PDB_NAME from CONTAINERS ("SYS"."AUDIT_UNIFIED_ENABLED_POLICIES") pol, dba_pdbs pdbs where pol.con_id=pdbs.pdb_id and pol.con_id <> 2 and pol.POLICY_NAME='ORA_CIS_RECOMMENDATIONS') pol,
-v\$database dbs
+    # ── Audit (12c+ : politique unifiée / 11g : audit classique) ─────────────
+    if [[ "${db_ver}" -ge 12 ]]; then
+        if [[ "${IS_CDB}" == "YES" ]]; then
+            sql_run "${db}" <<SQL >> /dev/null
+SPOOL ${LIST_DIR}/sec_audit_temp.lst APPEND
+SELECT dbs.name||','||pol.PDB_NAME||',ORA_CIS_RECOMMENDATIONS,1'
+FROM   (SELECT pdbs.PDB_NAME FROM CONTAINERS ("SYS"."AUDIT_UNIFIED_ENABLED_POLICIES") pol, dba_pdbs pdbs
+        WHERE pol.con_id = pdbs.pdb_id AND pol.con_id <> 2
+          AND pol.POLICY_NAME = 'ORA_CIS_RECOMMENDATIONS') pol, v\$database dbs
 UNION
-SELECT dbs.NAME||','||pdbs.pdb_name||',ORA_CIS_RECOMMENDATIONS,0' FROM  v\$database dbs,dba_pdbs pdbs
-where pdbs.pdb_name not in (select pdbs.PDB_NAME from CONTAINERS ("SYS"."AUDIT_UNIFIED_ENABLED_POLICIES") pol, dba_pdbs pdbs where pol.con_id=pdbs.pdb_id and pol.con_id <> 2 and pol.POLICY_NAME='ORA_CIS_RECOMMENDATIONS')
-and pdbs.STATUS = 'NORMAL' and pdbs.con_id <> 2;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_audit_enable_temp.lst
-                        else
-   echo "set pages0;
-         set linesize 900;
-         set feedback off;
-         SELECT
-             (SELECT name||',NON CONTAINER' FROM v\$database)
-             ||',ORA_CIS_RECOMMENDATIONS,'||(SELECT count(*) from AUDIT_UNIFIED_ENABLED_POLICIES where POLICY_NAME='ORA_CIS_RECOMMENDATIONS')
-         FROM dual;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_audit_enable_temp.lst
-                fi
-   else
-   echo "set pages0;
-          set linesize 900;
-          set feedback off;
-          SELECT dbs.name||',NON CONTAINER,USER,'||aud.AUDITED from v\$database dbs, (SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='USER' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,ROLE,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='ROLE' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,SYSTEM GRANT,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='SYSTEM GRANT' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,PROFILE,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='PROFILE' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,DATABASE LINK,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='DATABASE LINK' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,PUBLIC DATABASE LINK,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='PUBLIC DATABASE LINK' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,PUBLIC SYNONYM,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='PUBLIC SYNONYM' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,SYNONYM,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='SYNONYM' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,DIRECTORY,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='DIRECTORY' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,SELECT ANY DICTIONARY,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='SELECT ANY DICTIONARY' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,GRANT ANY OBJECT PRIVILEGE,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='GRANT ANY OBJECT PRIVILEGE' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,GRANT ANY PRIVILEGE,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='GRANT ANY PRIVILEGE' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,DROP ANY PROCEDURE,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='DROP ANY PROCEDURE' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,PROCEDURE,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='PROCEDURE' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,ALTER SYSTEM,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='ALTER SYSTEM' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,TRIGGER,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='TRIGGER' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,CREATE SESSION,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_STMT_AUDIT_OPTS WHERE AUDIT_OPTION='CREATE SESSION' AND USER_NAME IS NULL AND PROXY_NAME IS NULL AND SUCCESS = 'BY ACCESS' AND FAILURE = 'BY ACCESS') aud
-          UNION ALL SELECT dbs.name||',NON CONTAINER,AUDIT_TABLE,'||aud.AUDITED from v\$database dbs,(SELECT COUNT(*) as AUDITED FROM DBA_OBJ_AUDIT_OPTS WHERE OBJECT_NAME='AUD$' AND ALT='A/A' AND AUD='A/A' AND COM='A/A' AND DEL='A/A' AND GRA='A/A' AND IND='A/A' AND INS='A/A' AND LOC='A/A' AND REN='A/A' AND SEL='A/A' AND UPD='A/A' AND FBK='A/A') aud;" | sqlplus -s ${USERNAME_DB}/${PASSWORD_DB}@${db} >> lists/databases_security_audit_enable_temp.lst
-fi
+SELECT dbs.NAME||','||pdbs.pdb_name||',ORA_CIS_RECOMMENDATIONS,0'
+FROM   v\$database dbs, dba_pdbs pdbs
+WHERE  pdbs.pdb_name NOT IN
+       (SELECT pdbs2.PDB_NAME FROM CONTAINERS ("SYS"."AUDIT_UNIFIED_ENABLED_POLICIES") pol, dba_pdbs pdbs2
+        WHERE pol.con_id = pdbs2.pdb_id AND pol.con_id <> 2
+          AND pol.POLICY_NAME = 'ORA_CIS_RECOMMENDATIONS')
+  AND  pdbs.STATUS = 'NORMAL' AND pdbs.con_id <> 2;
+SPOOL OFF
+SQL
+        else
+            sql_run "${db}" <<SQL >> /dev/null
+SPOOL ${LIST_DIR}/sec_audit_temp.lst APPEND
+SELECT (SELECT name||',NON CONTAINER' FROM v\$database)||
+       ',ORA_CIS_RECOMMENDATIONS,'||
+       (SELECT COUNT(*) FROM AUDIT_UNIFIED_ENABLED_POLICIES WHERE POLICY_NAME='ORA_CIS_RECOMMENDATIONS')
+FROM dual;
+SPOOL OFF
+SQL
+        fi
+    else
+        # 11g : audit classique
+        sql_run "${db}" <<'SQL' >> /dev/null
+SPOOL ${LIST_DIR}/sec_audit_temp.lst APPEND
+SELECT dbs.name||',NON CONTAINER,'||opt.AUDIT_OPTION||','||
+       CASE WHEN cnt.CNT > 0 THEN '1' ELSE '0' END
+FROM   v$database dbs,
+       (SELECT 'USER' AO FROM dual UNION ALL SELECT 'ROLE' FROM dual
+        UNION ALL SELECT 'SYSTEM GRANT' FROM dual UNION ALL SELECT 'PROFILE' FROM dual
+        UNION ALL SELECT 'DATABASE LINK' FROM dual UNION ALL SELECT 'ALTER SYSTEM' FROM dual
+        UNION ALL SELECT 'CREATE SESSION' FROM dual UNION ALL SELECT 'TRIGGER' FROM dual) opt,
+       (SELECT AUDIT_OPTION, COUNT(*) CNT FROM DBA_STMT_AUDIT_OPTS
+        WHERE USER_NAME IS NULL AND PROXY_NAME IS NULL
+          AND SUCCESS='BY ACCESS' AND FAILURE='BY ACCESS'
+        GROUP BY AUDIT_OPTION) cnt
+WHERE  cnt.AUDIT_OPTION(+) = opt.AO;
+SPOOL OFF
+SQL
+    fi
 
-####END OF LOOP
-fi
+done < <(grep -v '^\s*#' "${LIST_FILE}" | grep -v '^\s*$' | sort -u)
 
-#####Cleanup VAR
-export CHECK_STANDBY="EMPTY"
-export CHECK_VERSION="EMPTY"
-export CHECK_CONTAINER="EMPTY"
-export CHECK_VERSION_DATABASES="EMPTY"
-done
+# ── Finalisation ──────────────────────────────────────────────────────────────
+log "Finalisation..."
+finalize_lst "${LIST_DIR}/sec_parameter_temp.lst"      "${LIST_DIR}/databases_security_parameter.lst"
+finalize_lst "${LIST_DIR}/sec_network_enc_temp.lst"    "${LIST_DIR}/databases_security_network_encryption.lst"
+finalize_lst "${LIST_DIR}/sec_profile_temp.lst"        "${LIST_DIR}/databases_security_profile.lst"
+finalize_lst "${LIST_DIR}/sec_default_profile_temp.lst" "${LIST_DIR}/databases_security_default_profile.lst"
+finalize_lst "${LIST_DIR}/sec_usermig_temp.lst"        "${LIST_DIR}/databases_security_usermig_table_exist.lst"
+finalize_lst "${LIST_DIR}/sec_admin_high_privs_temp.lst" "${LIST_DIR}/databases_security_admin_high_privs.lst"
+finalize_lst "${LIST_DIR}/sec_high_role_privs_temp.lst"  "${LIST_DIR}/databases_security_high_role_privs.lst"
+finalize_lst "${LIST_DIR}/sec_high_sys_privs_temp.lst"   "${LIST_DIR}/databases_security_high_sys_privs.lst"
+finalize_lst "${LIST_DIR}/sec_high_tab_privs_temp.lst"   "${LIST_DIR}/databases_security_high_tab_privs.lst"
+finalize_lst "${LIST_DIR}/sec_default_user_pwd_temp.lst" "${LIST_DIR}/databases_security_default_user_pwd.lst"
+finalize_lst "${LIST_DIR}/sec_tablespace_temp.lst"       "${LIST_DIR}/databases_security_tablespace.lst"
+finalize_lst "${LIST_DIR}/sec_audit_temp.lst"            "${LIST_DIR}/databases_security_audit_enable.lst"
 
-##Cleanup TEMP FILE
-cat lists/databases_security_parameter_temp.lst | grep -v "SP2-0157" | grep "," | sort -u | sed '/^$/d' > lists/databases_security_parameter.lst
-cat lists/databases_security_profile_temp.lst | grep -v "SP2-0157" | grep "," | sort -u | sed '/^$/d' > lists/databases_security_profile.lst
-cat lists/databases_security_default_profile_temp.lst | grep -v "SP2-0157" | grep "," | sort -u | sed '/^$/d' > lists/databases_security_default_profile.lst
-cat lists/databases_security_admin_high_privs_temp.lst | grep -v "SP2-0157" | grep "," |  sort -u | sed '/^$/d' > lists/databases_security_admin_high_privs.lst
-cat lists/databases_security_high_role_privs_temp.lst | grep -v "SP2-0157" | grep "," | sort -u | sed '/^$/d' > lists/databases_security_high_role_privs.lst
-cat lists/databases_security_high_sys_privs_temp.lst | grep -v "SP2-0157" | grep "," |  sort -u | sed '/^$/d' > lists/databases_security_high_sys_privs.lst
-cat lists/databases_security_high_tab_privs_temp.lst | grep -v "SP2-0157" | grep "," |  sort -u | sed '/^$/d' > lists/databases_security_high_tab_privs.lst
-cat lists/databases_security_audit_enable_temp.lst | grep -v "SP2-0157" | grep "," |  sort -u | sed '/^$/d' >  lists/databases_security_audit_enable.lst
-cat lists/databases_security_default_user_pwd_temp.lst | grep -v "SP2-0157" | grep "," |  sort -u | sed '/^$/d' > lists/databases_security_default_user_pwd.lst
-cat lists/databases_security_usermig_table_exist_temp.lst | grep -v "SP2-0157" | grep "," |  sort -u | sed '/^$/d' > lists/databases_security_usermig_table_exist.lst
-cat lists/databases_security_tablespace_temp.lst | grep -v "SP2-0157" | grep -v "SELECT" | grep "," | sort -u | sed '/^$/d' > lists/databases_security_tablespace.lst
-cat lists/databases_security_network_encryption_temp.lst | grep -v "SP2-0157" | grep "," | sort -u | sed '/^$/d' > lists/databases_security_network_encryption.lst
-
-rm -rf lists/databases_security_default_user_pwd_temp.lst
-rm -rf lists/databases_security_audit_enable_temp.lst
-rm -rf lists/databases_security_high_tab_privs_temp.lst
-rm -rf lists/databases_security_high_sys_privs_temp.lst
-rm -rf lists/databases_security_high_role_privs_temp.lst
-rm -rf lists/databases_security_admin_high_privs_temp.lst
-rm -rf lists/databases_security_parameter_temp.lst
-rm -rf lists/databases_security_profile_temp.lst
-rm -rf lists/databases_security_default_profile_temp.lst
-rm -rf lists/databases_security_usermig_table_exist_temp.lst
-rm -rf lists/databases_security_tablespace_temp.lst
-rm -rf lists/databases_security_network_encryption_temp.lst
-
-##CHECK ERROR
-if [ -f lists/error_db.lst ]; then
-       echo "Error to generate inventory for databases below (Security Part):
-             `cat lists/error_db.lst`" | mailx -s "Failed to generate inventory (Security Part)" IT-DBA@chl.lu
-        exit 1
-fi
+report_errors "Oracle inventory (sécurité): erreurs de connexion"
+log "Terminé."
