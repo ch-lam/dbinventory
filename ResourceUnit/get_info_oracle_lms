@@ -25,13 +25,13 @@ while IFS=';' read -r db_env lic db; do
     # LMS : primaire uniquement
     [[ "${db_role}" == *STANDBY* ]] && continue
 
-    sql_run "${db}" <<SQL >> "${LIST_DIR}/lms_temp.lst"
+    sql_run "${db}" <<SQL >> "${LIST_DIR}/lms_temp.csv"
 @${SCRIPT_DIR}/sql/oracle_lms.sql
 SQL
 
 done < <(grep -v '^\s*#' "${LIST_FILE}" | grep -v '^\s*$' | sort -u)
 
-finalize_lst "${LIST_DIR}/lms_temp.lst" "${LIST_DIR}/databases_lms.lst"
+finalize_lst "${LIST_DIR}/lms_temp.csv" "${LIST_DIR}/oracle_lms.csv"
 
 report_errors "Oracle inventory (LMS): erreurs de connexion"
 log "Terminé."

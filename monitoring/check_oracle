@@ -1,5 +1,4 @@
 #!/bin/bash
-#DEV BY J.RAGUENEAU
 
 export ORACLE_HOME=/inventory/OracleClient/instantclient_23_9
 export TNS_ADMIN=/inventory/OracleClient/instantclient_23_9/network

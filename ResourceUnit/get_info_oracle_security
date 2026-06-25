@@ -32,24 +32,26 @@ while IFS=';' read -r db_env lic db; do
 
     # ── Paramètres et chiffrement réseau (tous) ───────────────────────────────
     sql_run "${db}" <<SQL >> /dev/null
-SPOOL ${LIST_DIR}/sec_parameter_temp.lst APPEND
-SELECT dbs.NAME||','||prm.VALUE||','||prm.name FROM v\$parameter prm, v\$database dbs
+SPOOL ${LIST_DIR}/sec_parameter_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","'||REPLACE(prm.VALUE,'"','')||'","'||prm.name||'"'
+FROM v\$parameter prm, v\$database dbs
 WHERE  lower(prm.name) IN ('o7_dictionary_accessibility','sec_return_server_release_banner',
        'remote_os_authent','remote_os_roles','os_roles','audit_trail','audit_sys_operations',
        'sec_max_failed_login_attempts','sec_protocol_error_trace_action','resource_limit',
        'sec_case_sensitive_logon','sec_protocol_error_further_action','utl_file_dir','pdb_os_credential')
 UNION ALL
-SELECT dbs.NAME||','||prm.VALUE||','||prm.PARAMETER FROM v\$option prm, v\$database dbs
+SELECT '"'||dbs.NAME||'","'||REPLACE(prm.VALUE,'"','')||'","'||prm.PARAMETER||'"'
+FROM v\$option prm, v\$database dbs
 WHERE  prm.PARAMETER = 'Unified Auditing'
 UNION ALL
-SELECT dbs.NAME||',4,_sys_logon_delay' FROM v\$database dbs
+SELECT '"'||dbs.NAME||'","4","_sys_logon_delay"' FROM v\$database dbs
 WHERE  EXISTS (SELECT 1 FROM v\$parameter WHERE lower(name)='_sys_logon_delay' AND value='4')
 UNION ALL
-SELECT dbs.NAME||',0,_sys_logon_delay' FROM v\$database dbs
+SELECT '"'||dbs.NAME||'","0","_sys_logon_delay"' FROM v\$database dbs
 WHERE  NOT EXISTS (SELECT 1 FROM v\$parameter WHERE lower(name)='_sys_logon_delay' AND value='4');
 SPOOL OFF
-SPOOL ${LIST_DIR}/sec_network_enc_temp.lst APPEND
-SELECT dbs.NAME||','||NVL(REPLACE(sess.NETWORK_SERVICE_BANNER,' ','_'),'EMPTY')
+SPOOL ${LIST_DIR}/sec_network_enc_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","'||NVL(REPLACE(sess.NETWORK_SERVICE_BANNER,' ','_'),'EMPTY')||'"'
 FROM   v\$database dbs, v\$session_connect_info sess
 WHERE  sess.SID = SYS_CONTEXT('USERENV','SID')
   AND  LOWER(sess.NETWORK_SERVICE_BANNER) LIKE '%encryption%service%adapter%';
@@ -59,22 +61,25 @@ SQL
     # ── Profils ───────────────────────────────────────────────────────────────
     if [[ "${IS_CDB}" == "YES" ]]; then
         sql_run "${db}" <<SQL >> /dev/null
-SPOOL ${LIST_DIR}/sec_profile_temp.lst APPEND
-SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.profile||','||cdb.resource_name||','||cdb.limit
+SPOOL ${LIST_DIR}/sec_profile_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","'||pdbs.pdb_name||'","'||cdb.profile||'","'||cdb.resource_name||'","'||cdb.limit||'"'
 FROM   v\$database dbs, cdb_profiles cdb, dba_pdbs pdbs
 WHERE  cdb.con_id = pdbs.pdb_id AND cdb.con_id <> 2;
 SPOOL OFF
-SPOOL ${LIST_DIR}/sec_default_profile_temp.lst APPEND
-SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.username||','||cdb.profile||','||cdb.oracle_maintained
+SPOOL ${LIST_DIR}/sec_default_profile_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","'||pdbs.pdb_name||'","'||cdb.username||'","'||cdb.profile||'","'||cdb.oracle_maintained||'"'
 FROM   v\$database dbs, cdb_users cdb, dba_pdbs pdbs
 WHERE  cdb.con_id = pdbs.pdb_id AND cdb.con_id <> 2
 UNION ALL
-SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.NAME||','||cdb.profile||',N'
+SELECT '"'||dbs.NAME||'","'||pdbs.pdb_name||'","'||cdb.NAME||'","'||cdb.profile||'","N"'
 FROM   v\$database dbs, cdb_xs_users cdb, dba_pdbs pdbs
 WHERE  cdb.con_id = pdbs.pdb_id AND cdb.con_id <> 2 AND cdb.name NOT IN ('XSGUEST');
 SPOOL OFF
-SPOOL ${LIST_DIR}/sec_usermig_temp.lst APPEND
-SELECT dbs.NAME||','||pdbs.pdb_name||','||cdb.OWNER||','||cdb.TABLE_NAME
+SPOOL ${LIST_DIR}/sec_usermig_temp.csv APPEND
+-- SYS.USER\$MIG : table residuelle de migration contenant des hash de mots de passe
+-- au format legacy 10G (DES). Sa presence indique que des comptes ont encore un hash
+-- faible actif en parallele du hash moderne, exploitable par brute-force.
+SELECT '"'||dbs.NAME||'","'||pdbs.pdb_name||'","'||cdb.OWNER||'","'||cdb.TABLE_NAME||'"'
 FROM   v\$database dbs, CDB_TABLES cdb, dba_pdbs pdbs
 WHERE  cdb.con_id = pdbs.pdb_id AND cdb.con_id <> 2
   AND  cdb.TABLE_NAME='USER\$MIG' AND cdb.OWNER='SYS';
@@ -82,17 +87,20 @@ SPOOL OFF
 SQL
     else
         sql_run "${db}" <<SQL >> /dev/null
-SPOOL ${LIST_DIR}/sec_profile_temp.lst APPEND
-SELECT dbs.NAME||','||'NON CONTAINER,'||prf.profile||','||prf.resource_name||','||prf.limit
+SPOOL ${LIST_DIR}/sec_profile_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","NON CONTAINER","'||prf.profile||'","'||prf.resource_name||'","'||prf.limit||'"'
 FROM   v\$database dbs, dba_profiles prf;
 SPOOL OFF
-SPOOL ${LIST_DIR}/sec_default_profile_temp.lst APPEND
-SELECT dbs.NAME||','||'NON CONTAINER,'||usr.username||','||usr.profile||','||
-       NVL(usr.oracle_maintained,'NA')
+SPOOL ${LIST_DIR}/sec_default_profile_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","NON CONTAINER","'||usr.username||'","'||usr.profile||'","'||
+       NVL(usr.oracle_maintained,'NA')||'"'
 FROM   v\$database dbs, dba_users usr;
 SPOOL OFF
-SPOOL ${LIST_DIR}/sec_usermig_temp.lst APPEND
-SELECT dbs.NAME||','||'NON CONTAINER,'||tbs.OWNER||','||tbs.TABLE_NAME
+SPOOL ${LIST_DIR}/sec_usermig_temp.csv APPEND
+-- SYS.USER\$MIG : table residuelle de migration contenant des hash de mots de passe
+-- au format legacy 10G (DES). Sa presence indique que des comptes ont encore un hash
+-- faible actif en parallele du hash moderne, exploitable par brute-force.
+SELECT '"'||dbs.NAME||'","NON CONTAINER","'||tbs.OWNER||'","'||tbs.TABLE_NAME||'"'
 FROM   v\$database dbs, DBA_TABLES tbs
 WHERE  tbs.TABLE_NAME='USER\$MIG' AND tbs.OWNER='SYS';
 SPOOL OFF
@@ -101,21 +109,21 @@ SQL
 
     # ── Privilèges élevés ─────────────────────────────────────────────────────
     sql_run "${db}" <<SQL >> /dev/null
-SPOOL ${LIST_DIR}/sec_admin_high_privs_temp.lst APPEND
-SELECT dbs.NAME||','||pwd.username FROM v\$database dbs, v\$pwfile_users pwd ORDER BY 1;
+SPOOL ${LIST_DIR}/sec_admin_high_privs_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","'||pwd.username||'"' FROM v\$database dbs, v\$pwfile_users pwd ORDER BY 1;
 SPOOL OFF
 SQL
 
     if [[ "${IS_CDB}" == "YES" ]]; then
         sql_run "${db}" <<SQL >> /dev/null
-SPOOL ${LIST_DIR}/sec_high_role_privs_temp.lst APPEND
-SELECT dbs.NAME||','||pdbs.pdb_name||','||r.grantee||','||r.granted_role
+SPOOL ${LIST_DIR}/sec_high_role_privs_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","'||pdbs.pdb_name||'","'||r.grantee||'","'||r.granted_role||'"'
 FROM   v\$database dbs, cdb_role_privs r, dba_pdbs pdbs
 WHERE  r.con_id = pdbs.pdb_id AND r.con_id <> 2
   AND  r.GRANTED_ROLE IN ('DELETE_CATALOG_ROLE','SELECT_CATALOG_ROLE','EXECUTE_CATALOG_ROLE','DBA');
 SPOOL OFF
-SPOOL ${LIST_DIR}/sec_high_sys_privs_temp.lst APPEND
-SELECT dbs.NAME||','||pdbs.pdb_name||','||p.grantee||','||p.privilege
+SPOOL ${LIST_DIR}/sec_high_sys_privs_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","'||pdbs.pdb_name||'","'||p.grantee||'","'||p.privilege||'"'
 FROM   v\$database dbs, cdb_sys_privs p, dba_pdbs pdbs
 WHERE  p.con_id = pdbs.pdb_id AND p.con_id <> 2
   AND  p.privilege IN ('SELECT ANY DICTIONARY','SELECT ANY TABLE','AUDIT SYSTEM',
@@ -123,8 +131,8 @@ WHERE  p.con_id = pdbs.pdb_id AND p.con_id <> 2
        'CREATE ANY LIBRARY','CREATE LIBRARY','GRANT ANY OBJECT PRIVILEGE',
        'GRANT ANY ROLE','GRANT ANY PRIVILEGE','CREATE EXTERNAL JOB');
 SPOOL OFF
-SPOOL ${LIST_DIR}/sec_high_tab_privs_temp.lst APPEND
-SELECT dbs.NAME||','||pdbs.pdb_name||','||p.grantee||','||p.TABLE_NAME
+SPOOL ${LIST_DIR}/sec_high_tab_privs_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","'||pdbs.pdb_name||'","'||p.grantee||'","'||p.TABLE_NAME||'"'
 FROM   v\$database dbs, cdb_tab_privs p, dba_pdbs pdbs
 WHERE  p.con_id = pdbs.pdb_id AND p.con_id <> 2
   AND  p.grantee = 'PUBLIC' AND p.privilege = 'EXECUTE'
@@ -134,33 +142,33 @@ WHERE  p.con_id = pdbs.pdb_id AND p.con_id <> 2
        'DBMS_AQADM_SYS','DBMS_STREAMS_RPC','DBMS_PRVTAQIM','LTADM','WWV_DBMS_SQL',
        'WWV_EXECUTE_IMMEDIATE','DBMS_IJOB','DBMS_FILE_TRANSFER')
 UNION ALL
-SELECT dbs.NAME||','||pdbs.pdb_name||','||p.TABLE_NAME||','||p.PRIVILEGE||' TO '||p.grantee
+SELECT '"'||dbs.NAME||'","'||pdbs.pdb_name||'","'||p.TABLE_NAME||'","'||p.PRIVILEGE||' TO '||p.grantee||'"'
 FROM   v\$database dbs, cdb_tab_privs p, dba_pdbs pdbs
 WHERE  p.con_id = pdbs.pdb_id AND p.con_id <> 2
   AND  p.grantee = 'PUBLIC' AND p.PRIVILEGE = 'INHERIT PRIVILEGES' AND p.TABLE_NAME = p.GRANTOR;
 SPOOL OFF
-SPOOL ${LIST_DIR}/sec_default_user_pwd_temp.lst APPEND
-SELECT dbs.NAME||','||'CONTAINER,'||usr.USERNAME
+SPOOL ${LIST_DIR}/sec_default_user_pwd_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","CONTAINER","'||usr.USERNAME||'"'
 FROM   v\$database dbs, DBA_USERS_WITH_DEFPWD usr WHERE USERNAME NOT LIKE '%XS\$NULL%';
 SPOOL OFF
 SQL
     else
         sql_run "${db}" <<SQL >> /dev/null
-SPOOL ${LIST_DIR}/sec_high_role_privs_temp.lst APPEND
-SELECT dbs.NAME||','||'NON CONTAINER,'||r.grantee||','||r.GRANTED_ROLE
+SPOOL ${LIST_DIR}/sec_high_role_privs_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","NON CONTAINER","'||r.grantee||'","'||r.GRANTED_ROLE||'"'
 FROM   v\$database dbs, dba_role_privs r
 WHERE  r.GRANTED_ROLE IN ('DELETE_CATALOG_ROLE','SELECT_CATALOG_ROLE','EXECUTE_CATALOG_ROLE','DBA');
 SPOOL OFF
-SPOOL ${LIST_DIR}/sec_high_sys_privs_temp.lst APPEND
-SELECT dbs.NAME||','||'NON CONTAINER,'||p.grantee||','||p.privilege
+SPOOL ${LIST_DIR}/sec_high_sys_privs_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","NON CONTAINER","'||p.grantee||'","'||p.privilege||'"'
 FROM   v\$database dbs, dba_sys_privs p
 WHERE  p.privilege IN ('SELECT ANY DICTIONARY','SELECT ANY TABLE','AUDIT SYSTEM',
        'EXEMPT ACCESS POLICY','BECOME USER','CREATE_PROCEDURE','ALTER SYSTEM',
        'CREATE ANY LIBRARY','CREATE LIBRARY','GRANT ANY OBJECT PRIVILEGE',
        'GRANT ANY ROLE','GRANT ANY PRIVILEGE','CREATE EXTERNAL JOB');
 SPOOL OFF
-SPOOL ${LIST_DIR}/sec_high_tab_privs_temp.lst APPEND
-SELECT dbs.NAME||','||'NON CONTAINER,'||p.grantee||','||p.TABLE_NAME
+SPOOL ${LIST_DIR}/sec_high_tab_privs_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","NON CONTAINER","'||p.grantee||'","'||p.TABLE_NAME||'"'
 FROM   v\$database dbs, dba_tab_privs p
 WHERE  p.grantee = 'PUBLIC' AND p.privilege = 'EXECUTE'
   AND  p.TABLE_NAME IN ('UTL_FILE','UTL_INADDR','UTL_MAIL','UTL_SMTP','UTL_HTTP',
@@ -169,12 +177,12 @@ WHERE  p.grantee = 'PUBLIC' AND p.privilege = 'EXECUTE'
        'DBMS_AQADM_SYS','DBMS_STREAMS_RPC','DBMS_PRVTAQIM','LTADM','WWV_DBMS_SQL',
        'WWV_EXECUTE_IMMEDIATE','DBMS_IJOB','DBMS_FILE_TRANSFER')
 UNION ALL
-SELECT dbs.NAME||','||'NON CONTAINER,'||','||p.TABLE_NAME||','||p.PRIVILEGE||' TO '||p.grantee
+SELECT '"'||dbs.NAME||'","NON CONTAINER","'||p.TABLE_NAME||'","'||p.PRIVILEGE||' TO '||p.grantee||'"'
 FROM   v\$database dbs, dba_tab_privs p
 WHERE  p.grantee = 'PUBLIC' AND p.PRIVILEGE = 'INHERIT PRIVILEGES' AND p.TABLE_NAME = p.GRANTOR;
 SPOOL OFF
-SPOOL ${LIST_DIR}/sec_default_user_pwd_temp.lst APPEND
-SELECT dbs.NAME||','||'NON CONTAINER,'||usr.USERNAME
+SPOOL ${LIST_DIR}/sec_default_user_pwd_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","NON CONTAINER","'||usr.USERNAME||'"'
 FROM   v\$database dbs, DBA_USERS_WITH_DEFPWD usr WHERE USERNAME NOT LIKE '%XS\$NULL%';
 SPOOL OFF
 SQL
@@ -183,16 +191,16 @@ SQL
     # ── Tablespaces chiffrés (primaire uniquement) ────────────────────────────
     if [[ "${IS_CDB}" == "YES" ]]; then
         sql_run "${db}" <<SQL >> /dev/null
-SPOOL ${LIST_DIR}/sec_tablespace_temp.lst APPEND
-SELECT dbs.NAME||','||pdbs.pdb_name||','||ts.tablespace_name||','||ts.encrypted
+SPOOL ${LIST_DIR}/sec_tablespace_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","'||pdbs.pdb_name||'","'||ts.tablespace_name||'","'||ts.encrypted||'"'
 FROM   v\$database dbs, cdb_tablespaces ts, dba_pdbs pdbs
 WHERE  ts.con_id = pdbs.pdb_id AND ts.con_id <> 2;
 SPOOL OFF
 SQL
     else
         sql_run "${db}" <<SQL >> /dev/null
-SPOOL ${LIST_DIR}/sec_tablespace_temp.lst APPEND
-SELECT dbs.NAME||','||'NON CONTAINER,'||ts.tablespace_name||','||ts.encrypted
+SPOOL ${LIST_DIR}/sec_tablespace_temp.csv APPEND
+SELECT '"'||dbs.NAME||'","NON CONTAINER","'||ts.tablespace_name||'","'||ts.encrypted||'"'
 FROM   v\$database dbs, dba_tablespaces ts;
 SPOOL OFF
 SQL
@@ -202,13 +210,13 @@ SQL
     if [[ "${db_ver}" -ge 12 ]]; then
         if [[ "${IS_CDB}" == "YES" ]]; then
             sql_run "${db}" <<SQL >> /dev/null
-SPOOL ${LIST_DIR}/sec_audit_temp.lst APPEND
-SELECT dbs.name||','||pol.PDB_NAME||',ORA_CIS_RECOMMENDATIONS,1'
+SPOOL ${LIST_DIR}/sec_audit_temp.csv APPEND
+SELECT '"'||dbs.name||'","'||pol.PDB_NAME||'","ORA_CIS_RECOMMENDATIONS","1"'
 FROM   (SELECT pdbs.PDB_NAME FROM CONTAINERS ("SYS"."AUDIT_UNIFIED_ENABLED_POLICIES") pol, dba_pdbs pdbs
         WHERE pol.con_id = pdbs.pdb_id AND pol.con_id <> 2
           AND pol.POLICY_NAME = 'ORA_CIS_RECOMMENDATIONS') pol, v\$database dbs
 UNION
-SELECT dbs.NAME||','||pdbs.pdb_name||',ORA_CIS_RECOMMENDATIONS,0'
+SELECT '"'||dbs.NAME||'","'||pdbs.pdb_name||'","ORA_CIS_RECOMMENDATIONS","0"'
 FROM   v\$database dbs, dba_pdbs pdbs
 WHERE  pdbs.pdb_name NOT IN
        (SELECT pdbs2.PDB_NAME FROM CONTAINERS ("SYS"."AUDIT_UNIFIED_ENABLED_POLICIES") pol, dba_pdbs pdbs2
@@ -219,10 +227,9 @@ SPOOL OFF
 SQL
         else
             sql_run "${db}" <<SQL >> /dev/null
-SPOOL ${LIST_DIR}/sec_audit_temp.lst APPEND
-SELECT (SELECT name||',NON CONTAINER' FROM v\$database)||
-       ',ORA_CIS_RECOMMENDATIONS,'||
-       (SELECT COUNT(*) FROM AUDIT_UNIFIED_ENABLED_POLICIES WHERE POLICY_NAME='ORA_CIS_RECOMMENDATIONS')
+SPOOL ${LIST_DIR}/sec_audit_temp.csv APPEND
+SELECT '"'||(SELECT name FROM v\$database)||'","NON CONTAINER","ORA_CIS_RECOMMENDATIONS","'||
+       (SELECT COUNT(*) FROM AUDIT_UNIFIED_ENABLED_POLICIES WHERE POLICY_NAME='ORA_CIS_RECOMMENDATIONS')||'"'
 FROM dual;
 SPOOL OFF
 SQL
@@ -230,9 +237,9 @@ SQL
     else
         # 11g : audit classique
         sql_run "${db}" <<'SQL' >> /dev/null
-SPOOL ${LIST_DIR}/sec_audit_temp.lst APPEND
-SELECT dbs.name||',NON CONTAINER,'||opt.AUDIT_OPTION||','||
-       CASE WHEN cnt.CNT > 0 THEN '1' ELSE '0' END
+SPOOL ${LIST_DIR}/sec_audit_temp.csv APPEND
+SELECT '"'||dbs.name||'","NON CONTAINER","'||opt.AUDIT_OPTION||'","'||
+       CASE WHEN cnt.CNT > 0 THEN '1' ELSE '0' END||'"'
 FROM   v$database dbs,
        (SELECT 'USER' AO FROM dual UNION ALL SELECT 'ROLE' FROM dual
         UNION ALL SELECT 'SYSTEM GRANT' FROM dual UNION ALL SELECT 'PROFILE' FROM dual
@@ -251,18 +258,18 @@ done < <(grep -v '^\s*#' "${LIST_FILE}" | grep -v '^\s*$' | sort -u)
 
 # ── Finalisation ──────────────────────────────────────────────────────────────
 log "Finalisation..."
-finalize_lst "${LIST_DIR}/sec_parameter_temp.lst"      "${LIST_DIR}/databases_security_parameter.lst"
-finalize_lst "${LIST_DIR}/sec_network_enc_temp.lst"    "${LIST_DIR}/databases_security_network_encryption.lst"
-finalize_lst "${LIST_DIR}/sec_profile_temp.lst"        "${LIST_DIR}/databases_security_profile.lst"
-finalize_lst "${LIST_DIR}/sec_default_profile_temp.lst" "${LIST_DIR}/databases_security_default_profile.lst"
-finalize_lst "${LIST_DIR}/sec_usermig_temp.lst"        "${LIST_DIR}/databases_security_usermig_table_exist.lst"
-finalize_lst "${LIST_DIR}/sec_admin_high_privs_temp.lst" "${LIST_DIR}/databases_security_admin_high_privs.lst"
-finalize_lst "${LIST_DIR}/sec_high_role_privs_temp.lst"  "${LIST_DIR}/databases_security_high_role_privs.lst"
-finalize_lst "${LIST_DIR}/sec_high_sys_privs_temp.lst"   "${LIST_DIR}/databases_security_high_sys_privs.lst"
-finalize_lst "${LIST_DIR}/sec_high_tab_privs_temp.lst"   "${LIST_DIR}/databases_security_high_tab_privs.lst"
-finalize_lst "${LIST_DIR}/sec_default_user_pwd_temp.lst" "${LIST_DIR}/databases_security_default_user_pwd.lst"
-finalize_lst "${LIST_DIR}/sec_tablespace_temp.lst"       "${LIST_DIR}/databases_security_tablespace.lst"
-finalize_lst "${LIST_DIR}/sec_audit_temp.lst"            "${LIST_DIR}/databases_security_audit_enable.lst"
+finalize_lst "${LIST_DIR}/sec_parameter_temp.csv"        "${LIST_DIR}/oracle_security_parameter.csv"
+finalize_lst "${LIST_DIR}/sec_network_enc_temp.csv"      "${LIST_DIR}/oracle_security_network_encryption.csv"
+finalize_lst "${LIST_DIR}/sec_profile_temp.csv"          "${LIST_DIR}/oracle_security_profile.csv"
+finalize_lst "${LIST_DIR}/sec_default_profile_temp.csv"  "${LIST_DIR}/oracle_security_default_profile.csv"
+finalize_lst "${LIST_DIR}/sec_usermig_temp.csv"          "${LIST_DIR}/oracle_security_usermig_table_exist.csv"
+finalize_lst "${LIST_DIR}/sec_admin_high_privs_temp.csv" "${LIST_DIR}/oracle_security_admin_high_privs.csv"
+finalize_lst "${LIST_DIR}/sec_high_role_privs_temp.csv"  "${LIST_DIR}/oracle_security_high_role_privs.csv"
+finalize_lst "${LIST_DIR}/sec_high_sys_privs_temp.csv"   "${LIST_DIR}/oracle_security_high_sys_privs.csv"
+finalize_lst "${LIST_DIR}/sec_high_tab_privs_temp.csv"   "${LIST_DIR}/oracle_security_high_tab_privs.csv"
+finalize_lst "${LIST_DIR}/sec_default_user_pwd_temp.csv" "${LIST_DIR}/oracle_security_default_user_pwd.csv"
+finalize_lst "${LIST_DIR}/sec_tablespace_temp.csv"       "${LIST_DIR}/oracle_security_tablespace.csv"
+finalize_lst "${LIST_DIR}/sec_audit_temp.csv"            "${LIST_DIR}/oracle_security_audit_enable.csv"
 
 report_errors "Oracle inventory (sécurité): erreurs de connexion"
 log "Terminé."

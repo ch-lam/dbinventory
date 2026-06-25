@@ -1,39 +1,4 @@
--- Oracle Database Schema
--- Converti depuis MySQL/MariaDB (mysql_database_schema.sql)
--- Charset : UTF8 (AL32UTF8) -- toutes les collations MySQL ignorees, on est en UTF8 Oracle
---
--- Correspondances de types :
---   varchar(n)        -> VARCHAR2(n CHAR)   [semantique CHAR pour UTF8]
---   int(n)            -> NUMBER(10)         [int MySQL = 32 bits, indep. de la largeur d'affichage]
---   int(2)            -> NUMBER(2)          [scores de compliance, petits entiers contraints]
---   bigint(20)        -> NUMBER(19)
---   tinyint(1)        -> NUMBER(1)
---   float             -> BINARY_FLOAT       [IEEE 754 32 bits, equivalent exact]
---   decimal(p,s)      -> NUMBER(p,s)        [p plafonne a 38, max Oracle]
---   datetime          -> DATE               [DATE Oracle contient la partie heure]
---   datetime(6)       -> TIMESTAMP(6)
---   timestamp         -> TIMESTAMP DEFAULT SYSTIMESTAMP
---   longtext / text   -> CLOB
---   date              -> DATE
---   AUTO_INCREMENT    -> GENERATED ALWAYS AS IDENTITY
---
--- Noms renommes (mots reserves Oracle) :
---   comment           -> comments
---
--- Supprime : ENGINE=, CHARSET=, COLLATE=, ON UPDATE current_timestamp(),
---            directives de connexion MySQL, commentaires phpMyAdmin
---
--- Note compatibilite : noms de tables > 30 caracteres necessitent Oracle 18c+
---                      (limite Oracle 12c = 30 car., Oracle 18c+ = 128 car.)
-
-
--- ============================================================
--- chl_ipam_comment
--- ============================================================
-create table chl_ipam_comment (
-   hostname varchar2(100 char) not null,
-   comments clob not null
-);
+-- Oracle Database Schema for DBInventory
 
 -- ============================================================
 -- mssql_backup
@@ -64,7 +29,7 @@ create index backup_start_date_idx on
 -- mssql_backup_info_history
 -- ============================================================
 create table mssql_backup_info_history (
-   scoring_result                  timestamp default systimestamp not null,
+   scoring_result                  timestamp default on null systimestamp not null,
    environment                     varchar2(20 char) not null,
    cumulative_hours_between_backup number(10) not null
 );
@@ -108,9 +73,9 @@ create table mssql_backup_temp (
 );
 
 -- ============================================================
--- mssql_database
+-- mssql_databases
 -- ============================================================
-create table mssql_database (
+create table mssql_databases (
    hostname              varchar2(100 char),
    database_id           number(5),
    database_name         varchar2(100 char),
@@ -220,7 +185,7 @@ create table mssql_security_auditlevel (
    servername       varchar2(50 char) not null,
    auditlevel       varchar2(50 char) not null,
    compliance_score number(2) default 0 not null,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -230,7 +195,7 @@ create table mssql_security_auditlevel_exception (
    servername varchar2(50 char) not null,
    auditlevel varchar2(50 char) not null,
    comments   varchar2(200 char) default '0' not null,
-   date_value timestamp default systimestamp not null
+   date_value timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -242,7 +207,7 @@ create table mssql_security_configoptions (
    config_value     number(10) not null,
    run_value        number(10) not null,
    compliance_score number(2) default 0 not null,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -254,7 +219,7 @@ create table mssql_security_configoptions_exception (
    config_value number(10) not null,
    run_value    number(10) not null,
    comments     varchar2(200 char) default '0' not null,
-   date_value   timestamp default systimestamp not null
+   date_value   timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -266,7 +231,7 @@ create table mssql_security_dbproperties (
    is_auto_close_on  number(10) not null,
    is_trustworthy_on number(10) not null,
    compliance_score  number(2) default 0 not null,
-   date_value        timestamp default systimestamp not null
+   date_value        timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -278,7 +243,7 @@ create table mssql_security_dbproperties_exception (
    is_auto_close_on  number(10) not null,
    is_trustworthy_on number(10) not null,
    comments          varchar2(200 char) default '0' not null,
-   date_value        timestamp default systimestamp not null
+   date_value        timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -291,7 +256,7 @@ create table mssql_security_encryption (
    key_name         varchar2(100 char) not null,
    algorithm_desc   varchar2(50 char) not null,
    compliance_score number(2) default 0 not null,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -304,7 +269,7 @@ create table mssql_security_encryption_exception (
    key_name       varchar2(100 char) not null,
    algorithm_desc varchar2(50 char) not null,
    comments       varchar2(200 char) default '0' not null,
-   date_value     timestamp default systimestamp not null
+   date_value     timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -316,7 +281,7 @@ create table mssql_security_groups (
    permission_name  varchar2(100 char) not null,
    state_desc       varchar2(50 char) not null,
    compliance_score number(2) default 0 not null,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -328,7 +293,7 @@ create table mssql_security_groups_exception (
    permission_name varchar2(100 char) not null,
    state_desc      varchar2(50 char) not null,
    comments        varchar2(200 char) not null,
-   date_value      timestamp default systimestamp not null
+   date_value      timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -340,7 +305,7 @@ create table mssql_security_guestconnect (
    permission_name  varchar2(50 char) not null,
    state_desc       varchar2(50 char) not null,
    compliance_score number(2) default 0 not null,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -352,7 +317,7 @@ create table mssql_security_guestconnect_exception (
    permission_name varchar2(50 char) not null,
    state_desc      varchar2(50 char) not null,
    comments        varchar2(200 char) default '0' not null,
-   date_value      timestamp default systimestamp not null
+   date_value      timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -362,7 +327,7 @@ create table mssql_security_history (
    servername             varchar2(50 char) not null,
    environment            varchar2(20 char) not null,
    compliance_score_total number(2),
-   date_value             timestamp default systimestamp
+   date_value             timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -380,7 +345,7 @@ create table mssql_security_logins (
    is_disabled           number(2) not null,
    create_date           date not null,
    compliance_score      number(2) default 0 not null,
-   date_value            timestamp default systimestamp not null
+   date_value            timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -391,7 +356,7 @@ create table mssql_security_logins_exception (
    servername varchar2(50 char) not null,
    login_name varchar2(100 char) not null,
    comments   varchar2(200 char) default '0' not null,
-   date_value timestamp default systimestamp not null
+   date_value timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -402,7 +367,7 @@ create table mssql_security_orphanedusers (
    db_name          varchar2(50 char) not null,
    user_name        varchar2(100 char) not null,
    compliance_score number(2) default 0 not null,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -413,7 +378,7 @@ create table mssql_security_orphanedusers_exception (
    db_name    varchar2(50 char) not null,
    user_name  varchar2(100 char) not null,
    comments   varchar2(200 char) not null,
-   date_value timestamp default systimestamp not null
+   date_value timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -426,7 +391,7 @@ create table mssql_security_publicpermission (
    permission_name  varchar2(100 char) not null,
    state_desc       varchar2(50 char) not null,
    compliance_score number(2) default 0 not null,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -439,7 +404,7 @@ create table mssql_security_publicpermission_exception (
    permission_name varchar2(100 char) not null,
    state_desc      varchar2(50 char) not null,
    comments        varchar2(200 char) default '0' not null,
-   date_value      timestamp default systimestamp not null
+   date_value      timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -450,7 +415,7 @@ create table mssql_security_registryinfo (
    name             varchar2(100 char) not null,
    value            number(10) not null,
    compliance_score number(2) default 0 not null,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -460,7 +425,7 @@ create table mssql_security_registryinfo_exception (
    servername varchar2(50 char) not null,
    name       varchar2(100 char) not null,
    comments   varchar2(200 char) default '0' not null,
-   date_value timestamp default systimestamp not null
+   date_value timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -483,7 +448,7 @@ create table mssql_security_scoring (
    compliance_score_total number(2) default 0 not null,
    exception_detected     number(2) default 0 not null,
    legacy_server          number(2) default 0 not null,
-   date_value             timestamp default systimestamp not null
+   date_value             timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -499,7 +464,7 @@ create table mssql_security_sqlserveraudit (
    auditactionname           varchar2(100 char) not null,
    audited_result            varchar2(30 char) not null,
    compliance_score          number(2) default 0 not null,
-   date_value                timestamp default systimestamp not null
+   date_value                timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -509,7 +474,7 @@ create table mssql_security_sqlserveraudit_exception (
    servername      varchar2(50 char) not null,
    auditactionname varchar2(100 char) not null,
    comments        varchar2(200 char) default '0' not null,
-   date_value      timestamp default systimestamp not null
+   date_value      timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -556,20 +521,20 @@ create table oracle_audit_logon (
 -- oracle_audit_logon_history
 -- ============================================================
 create table oracle_audit_logon_history (
-   db_name        varchar2(50 char)  not null,
+   db_name        varchar2(50 char) not null,
    logon_time     varchar2(100 char),
    db_username    varchar2(100 char) not null,
    os_username    varchar2(100 char) not null,
    host_client    varchar2(100 char) not null,
    client_name    varchar2(200 char) not null,
-   expected_logon number(2)          default 0 not null,
-   date_value     timestamp          default systimestamp not null
+   expected_logon number(2) default 0 not null,
+   date_value     timestamp default on null systimestamp not null
 );
 
 -- ============================================================
--- oracle_backup_info
+-- oracle_backup
 -- ============================================================
-create table oracle_backup_info (
+create table oracle_backup (
    db_name      varchar2(50 char) not null,
    environment  varchar2(20 char),
    backup_type  varchar2(50 char) not null,
@@ -580,9 +545,9 @@ create table oracle_backup_info (
 );
 
 -- ============================================================
--- oracle_backup_info_archivelog_gap
+-- oracle_backup_archivelog_gap
 -- ============================================================
-create table oracle_backup_info_archivelog_gap (
+create table oracle_backup_archivelog_gap (
    db_name              varchar2(50 char) not null,
    environment          varchar2(20 char) not null,
    start_time           timestamp(6) not null,
@@ -591,10 +556,10 @@ create table oracle_backup_info_archivelog_gap (
 );
 
 -- ============================================================
--- oracle_backup_info_history
+-- oracle_backup_history
 -- ============================================================
-create table oracle_backup_info_history (
-   scoring_result                  timestamp default systimestamp not null,
+create table oracle_backup_history (
+   scoring_result                  timestamp default on null systimestamp not null,
    environment                     varchar2(20 char) not null,
    count_backup_failed             varchar2(50 char) not null,
    cumulative_hours_between_backup number(10) not null
@@ -617,9 +582,9 @@ create table oracle_backup_summary (
 );
 
 -- ============================================================
--- oracle_client_info
+-- oracle_client_version
 -- ============================================================
-create table oracle_client_info (
+create table oracle_client_version (
    db_name         varchar2(50 char) not null,
    db_version      varchar2(50 char) not null,
    environment     varchar2(50 char) not null,
@@ -631,52 +596,52 @@ create table oracle_client_info (
    service_name    varchar2(50 char) not null,
    failover_type   varchar2(50 char) not null,
    failover_method varchar2(50 char) not null,
-   check_client    number(10) default 1 not null
+   check_client    number(10) default 1
 );
 
 -- ============================================================
--- oracle_database_capacity_planning_cpu_mem
+-- oracle_metrics_cpu_memory
 -- ============================================================
-create table oracle_database_capacity_planning_cpu_mem (
+create table oracle_metrics_cpu_memory (
    pdb_name            varchar2(50 char) not null,
-   environment         varchar2(20 char) not null,
    cpu_time_minutes    number(10) not null,
    avg_sga_mb          number(10) not null,
    avg_pga_mb          number(10) not null,
    avg_buffer_cache_mb number(10) not null,
    avg_shared_pool_mb  number(10) not null,
-   date_value          timestamp default systimestamp not null
+   environment         varchar2(20 char),
+   date_value          timestamp default on null systimestamp not null
 );
 
 -- ============================================================
--- oracle_database_capacity_planning_cpu_mem_history
+-- oracle_metrics_cpu_memory_history
 -- ============================================================
-create table oracle_database_capacity_planning_cpu_mem_history (
+create table oracle_metrics_cpu_memory_history (
    pdb_name            varchar2(50 char) not null,
-   environment         varchar2(20 char) not null,
    cpu_time_minutes    number(10) not null,
    avg_sga_mb          number(10) not null,
    avg_pga_mb          number(10) not null,
    avg_buffer_cache_mb number(10) not null,
    avg_shared_pool_mb  number(10) not null,
-   date_value          timestamp default systimestamp not null
+   environment         varchar2(20 char),
+   date_value          timestamp default on null systimestamp not null
 );
 
 -- ============================================================
--- oracle_database_capacity_planning_cpu_service_history
+-- oracle_metrics_cpu_service
 -- ============================================================
-create table oracle_database_capacity_planning_cpu_service_history (
+create table oracle_metrics_cpu_service (
    pdb_name           varchar2(50 char) not null,
    service_name       varchar2(100 char) not null,
    dbcpu_time_minutes number(10) not null,
-   date_value         timestamp default systimestamp not null
+   date_value         timestamp default on null systimestamp not null
 );
 
 -- ============================================================
--- oracle_database_capacity_planning_cpu_service_prebuilt
+-- oracle_metrics_cpu_service_history
 -- Note : decimal(50,3) -> NUMBER(38,3) [precision max Oracle = 38]
 -- ============================================================
-create table oracle_database_capacity_planning_cpu_service_prebuilt (
+create table oracle_metrics_cpu_service_history (
    pdb_name           varchar2(50 char) not null,
    service_name       varchar2(100 char) not null,
    dbcpu_time_minutes number(10) not null,
@@ -685,40 +650,40 @@ create table oracle_database_capacity_planning_cpu_service_prebuilt (
 );
 
 -- ============================================================
--- oracle_database_capacity_planning_dbsize
+-- oracle_size_usage
 -- ============================================================
-create table oracle_database_capacity_planning_dbsize (
+create table oracle_size_usage (
    db_name         varchar2(50 char) not null,
    pdb_name        varchar2(50 char) not null,
-   environment     varchar2(20 char),
    tablespace_name varchar2(200 char) not null,
    size_mb         number(10) not null,
-   sum_segment_mb  number(10) default 0 not null,
-   date_value      timestamp default systimestamp not null
+   environment     varchar2(20 char),
+   sum_segment_mb  number(10) default 0,
+   date_value      timestamp default on null systimestamp not null
 );
 
 -- ============================================================
--- oracle_database_capacity_planning_dbsize_history
+-- oracle_size_usage_history
 -- ============================================================
-create table oracle_database_capacity_planning_dbsize_history (
+create table oracle_size_usage_history (
    db_name         varchar2(50 char) not null,
    pdb_name        varchar2(50 char) not null,
-   environment     varchar2(20 char),
    tablespace_name varchar2(200 char) not null,
    size_mb         number(10) not null,
-   sum_segment_mb  number(10) default 0 not null,
-   date_value      timestamp default systimestamp not null
+   environment     varchar2(20 char),
+   sum_segment_mb  number(10) default 0,
+   date_value      timestamp default on null systimestamp not null
 );
 
 -- ============================================================
--- oracle_database_capacity_planning_dbsize_segs
+-- oracle_size_usage_seg
 -- ============================================================
-create table oracle_database_capacity_planning_dbsize_segs (
+create table oracle_size_usage_seg (
    db_name         varchar2(50 char) not null,
    pdb_name        varchar2(50 char) not null,
    tablespace_name varchar2(200 char) not null,
    sum_segment_mb  number(10) not null,
-   date_value      timestamp default systimestamp not null
+   date_value      timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -781,19 +746,22 @@ create table oracle_database_capacity_planning_summary (
    exacc_ocpu_usage    binary_float default 0 not null,
    exacc_cost_usage    binary_float default 0 not null,
    cost_total          binary_float default 0 not null,
-   date_value          timestamp default systimestamp not null
+   date_value          timestamp default on null systimestamp not null
 );
 
 -- ============================================================
--- oracle_database_list
+-- oracle_databases
 -- ============================================================
-create table oracle_database_list (
+create table oracle_databases (
+   environment      varchar2(20 char) not null,
+   license_type     varchar2(50 char) not null,
    hostname         varchar2(100 char) not null,
    instance_name    varchar2(50 char) not null,
    db_version       varchar2(50 char) not null,
    db_name          varchar2(50 char) not null,
    db_log_mode      varchar2(50 char) not null,
    db_role          varchar2(50 char) not null,
+   db_unique_name   varchar2(50 char),
    db_charset       varchar2(50 char) not null,
    db_edition       varchar2(50 char) not null,
    rac_state        varchar2(50 char) not null,
@@ -802,11 +770,8 @@ create table oracle_database_list (
    asm_free         varchar2(50 char),
    asm_total        varchar2(50 char),
    easy_connect_tns varchar2(100 char),
-   db_unique_name   varchar2(50 char),
-   environment      varchar2(20 char) not null,
-   license_type     varchar2(50 char) not null,
    database_type    varchar2(50 char) not null,
-   count_pdb        number(10) default 0 not null
+   count_pdb        number(10) default 0
 );
 
 -- ============================================================
@@ -824,12 +789,12 @@ create table oracle_dataguard (
 -- oracle_hosts
 -- ============================================================
 create table oracle_hosts (
+   environment  varchar2(20 char) not null,
+   license_type varchar2(50 char) not null,
    hostname     varchar2(100 char) not null,
    num_cpus     number(6) not null,
    memory_gb    number(6) not null,
-   os_type      varchar2(100 char) not null,
-   environment  varchar2(20 char) not null,
-   license_type varchar2(50 char) not null
+   os_type      varchar2(100 char) not null
 );
 
 -- ============================================================
@@ -848,15 +813,16 @@ create table oracle_jdbc_tns (
 -- oracle_lms
 -- ============================================================
 create table oracle_lms (
-   db_name          varchar2(50 char)  not null,
-   hostname         varchar2(50 char)  not null,
-   db_pdb_name      varchar2(50 char)  not null,
+   grouping_id      number(1),                     -- 0=détail par PDB, 1=agrégé toutes PDBs
    con_id           number(5),                     -- PDB container ID (DBA_FEATURE_USAGE_STATISTICS)
+   db_pdb_name      varchar2(50 char) not null,
    product_name     varchar2(150 char) not null,
    usage_detected   varchar2(100 char) not null,
-   last_sample_date date,                          -- date de la dernière collecte AWR
+   last_sample_date varchar2(20 char),             -- format YYYYMMDD produit par oracle_lms.sql
    first_usage_date varchar2(100 char),            -- peut valoir 'Never'
-   last_usage_date  varchar2(100 char)             -- peut valoir 'Never'
+   last_usage_date  varchar2(100 char),            -- peut valoir 'Never'
+   db_name          varchar2(50 char) not null,
+   hostname         varchar2(50 char) not null
 );
 
 -- ============================================================
@@ -864,9 +830,9 @@ create table oracle_lms (
 -- ============================================================
 create table oracle_lms_reference (
    product_name varchar2(150 char) not null,
-   num_core     number(6)          not null,
-   license_type varchar2(50 char)  not null,
-   constraint pk_oracle_lms_reference primary key (product_name)
+   num_core     number(6) not null,
+   license_type varchar2(50 char) not null,
+   constraint pk_oracle_lms_reference primary key ( product_name )
 );
 
 -- ============================================================
@@ -889,13 +855,13 @@ create table oracle_psu (
 );
 
 -- ============================================================
--- oracle_security_admin_high_privs
+-- oracle_sec_admin_high_privs
 -- ============================================================
-create table oracle_security_admin_high_privs (
+create table oracle_sec_admin_high_privs (
    db_name          varchar2(50 char) not null,
    username         varchar2(50 char) not null,
    compliance_score number(2) default 0,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -905,7 +871,7 @@ create table oracle_security_admin_high_privs_exception (
    db_name    varchar2(50 char) not null,
    username   varchar2(50 char) not null,
    comments   varchar2(100 char) not null,
-   date_value timestamp default systimestamp not null
+   date_value timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -917,20 +883,20 @@ create table oracle_security_audit_enable (
    audit_parameter  varchar2(50 char) not null,
    audit_activated  number(2),
    compliance_score number(2) default 0,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
--- oracle_security_default_profile
+-- oracle_sec_default_profile
 -- ============================================================
-create table oracle_security_default_profile (
+create table oracle_sec_default_profile (
    db_name          varchar2(50 char) not null,
    pdb_name         varchar2(50 char) not null,
    username         varchar2(50 char) not null,
    profile          varchar2(50 char) not null,
    oracle_managed   varchar2(50 char) not null,
    compliance_score number(2) default 0,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -942,30 +908,30 @@ create table oracle_security_default_profile_exception (
    username   varchar2(50 char) not null,
    profile    varchar2(50 char) not null,
    comments   varchar2(100 char) not null,
-   date_value timestamp default systimestamp not null
+   date_value timestamp default on null systimestamp not null
 );
 
 -- ============================================================
--- oracle_security_default_user_pwd
+-- oracle_sec_default_user_pwd
 -- ============================================================
-create table oracle_security_default_user_pwd (
+create table oracle_sec_default_user_pwd (
    db_name          varchar2(50 char) not null,
    pdb_name         varchar2(50 char) not null,
    username         varchar2(50 char) not null,
    compliance_score number(2) default 0,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
--- oracle_security_high_role_privs
+-- oracle_sec_high_role_privs
 -- ============================================================
-create table oracle_security_high_role_privs (
+create table oracle_sec_high_role_privs (
    db_name          varchar2(50 char) not null,
    pdb_name         varchar2(50 char) not null,
    username         varchar2(50 char) not null,
    privilege        varchar2(100 char) not null,
    compliance_score number(2) default 0,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -977,7 +943,7 @@ create table oracle_security_high_role_privs_exception (
    username   varchar2(50 char) not null,
    privilege  varchar2(100 char) not null,
    comments   varchar2(100 char) not null,
-   date_value timestamp default systimestamp not null
+   date_value timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -989,7 +955,7 @@ create table oracle_security_high_sys_privs (
    username         varchar2(50 char) not null,
    privilege        varchar2(100 char) not null,
    compliance_score number(2) default 0,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -1001,7 +967,7 @@ create table oracle_security_high_sys_privs_exception (
    username   varchar2(50 char) not null,
    privilege  varchar2(100 char) not null,
    comments   varchar2(100 char) not null,
-   date_value timestamp default systimestamp not null
+   date_value timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -1013,7 +979,7 @@ create table oracle_security_high_tab_privs (
    username         varchar2(50 char) not null,
    privilege        varchar2(100 char) not null,
    compliance_score number(2) default 0,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -1025,7 +991,7 @@ create table oracle_security_high_tab_privs_exception (
    username   varchar2(50 char) not null,
    privilege  varchar2(100 char) not null,
    comments   varchar2(100 char) not null,
-   date_value timestamp default systimestamp not null
+   date_value timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -1035,17 +1001,17 @@ create table oracle_security_history (
    db_name                varchar2(50 char) not null,
    environment            varchar2(20 char) not null,
    compliance_score_total number(2),
-   date_value             timestamp default systimestamp
+   date_value             timestamp default on null systimestamp not null
 );
 
 -- ============================================================
--- oracle_security_network_encryption
+-- oracle_sec_network_encryption
 -- ============================================================
-create table oracle_security_network_encryption (
+create table oracle_sec_network_encryption (
    db_name           varchar2(50 char) not null,
    sqlnet_encryption varchar2(200 char) not null,
    compliance_score  number(2) default 0,
-   date_value        timestamp default systimestamp not null
+   date_value        timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -1053,10 +1019,10 @@ create table oracle_security_network_encryption (
 -- ============================================================
 create table oracle_security_parameter (
    db_name          varchar2(50 char) not null,
-   parameter_value  varchar2(50 char) not null,
+   parameter_value  varchar2(50 char),
    parameter_name   varchar2(50 char) not null,
    compliance_score number(2) default 0,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -1064,10 +1030,10 @@ create table oracle_security_parameter (
 -- ============================================================
 create table oracle_security_parameter_exception (
    db_name         varchar2(50 char) not null,
-   parameter_value varchar2(50 char) not null,
+   parameter_value varchar2(50 char),
    parameter_name  varchar2(50 char) not null,
    comments        varchar2(100 char) not null,
-   date_value      timestamp default systimestamp not null
+   date_value      timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -1078,9 +1044,9 @@ create table oracle_security_profile (
    pdb_name         varchar2(50 char) not null,
    profile          varchar2(50 char) not null,
    resource_name    varchar2(100 char) not null,
-   limit_value      varchar2(100 char) not null,
+   limit_value      varchar2(100 char),
    compliance_score number(2) default 0,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -1093,7 +1059,7 @@ create table oracle_security_profile_exception (
    resource_name varchar2(100 char) not null,
    limit_value   varchar2(100 char) not null,
    comments      varchar2(100 char) not null,
-   date_value    timestamp default systimestamp not null
+   date_value    timestamp default on null systimestamp not null
 );
 
 -- ============================================================
@@ -1114,20 +1080,31 @@ create table oracle_security_scoring (
    encrypted_tablespace_score number(2) default 0,
    network_encryption_score   number(2) default 0,
    compliance_score_total     number(2) default 0,
-   date_value                 timestamp default systimestamp not null
+   date_value                 timestamp default on null systimestamp not null
 );
 
 -- ============================================================
--- oracle_security_tablespace_encrypted
+-- oracle_security_tablespace
 -- ============================================================
-create table oracle_security_tablespace_encrypted (
+create table oracle_security_tablespace (
    db_name          varchar2(50 char) not null,
    pdb_name         varchar2(50 char) not null,
-   license_type     varchar2(50 char),
    tablespace_name  varchar2(100 char) not null,
    encrypted        varchar2(100 char) not null,
+   license_type     varchar2(50 char),
    compliance_score number(2) default 0,
-   date_value       timestamp default systimestamp not null
+   date_value       timestamp default on null systimestamp not null
+);
+
+-- ============================================================
+-- oracle_sec_usermig_tbl_exist
+-- SYS.USER$MIG : residus de migration avec hash legacy 10G (DES).
+-- ============================================================
+create table oracle_sec_usermig_tbl_exist (
+   db_name    varchar2(50 char) not null,
+   pdb_name   varchar2(50 char) not null,
+   owner      varchar2(30 char) not null,
+   table_name varchar2(30 char) not null
 );
 
 -- ============================================================
@@ -1156,47 +1133,52 @@ create table oracle_users (
 -- product_support
 -- ============================================================
 create table product_support (
-   type                varchar2(15 char)  not null,
+   type                varchar2(15 char) not null,
    version             varchar2(100 char) not null,
-   end_of_support_date date               not null,
-   constraint pk_product_support primary key (type, version)
+   commercial_name     varchar2(100 char) not null,
+   end_of_support_date date not null,
+   constraint pk_product_support primary key ( type,
+                                               version )
 );
 
 
 -- ============================================================
--- mssql_instance_list
--- Table maître des instances SQL Server à collecter.
--- Chargée depuis mssql_database_lists.lst (séparateur ':').
--- Lignes '#' du fichier = active=0 (instance désactivée).
--- Non tronquée à chaque cycle ; gérée par MERGE ou rechargement complet.
+-- mssql_collect_list
 -- ============================================================
-create table mssql_instance_list (
+create table mssql_collect_list (
+   collect_name varchar2(30 char) not null,
    hostname     varchar2(150 char) not null,
-   port         number(5)          default 1433 not null,
-   environment  varchar2(10 char)  not null,
-   license_type varchar2(50 char)  not null,
-   active       number(1)          default 1 not null,
-   constraint pk_mssql_instance_list primary key (hostname, port),
-   constraint chk_mssql_inst_env    check (environment  in ('PRD','TST','DEV','UAT')),
-   constraint chk_mssql_inst_lic    check (license_type in ('CHL','FREE_LIC','PROVIDER','INCCI')),
-   constraint chk_mssql_inst_active check (active in (0, 1))
+   port         number(5) default 1433 not null,
+   environment  varchar2(10 char) not null,
+   license_type varchar2(50 char) not null,
+   active       number(1) default 1 not null,
+   constraint pk_mssql_collect_list primary key ( collect_name )
 );
 
 
 -- ============================================================
--- oracle_instance_list
--- Table maître des instances Oracle à collecter.
--- Chargée depuis oracle_database_lists.lst (séparateur ';').
--- Format : environment;license_type;host:port/service
--- Non tronquée à chaque cycle ; gérée par MERGE ou rechargement complet.
+-- oracle_collect_list
 -- ============================================================
-create table oracle_instance_list (
+create table oracle_collect_list (
+   collect_name     varchar2(30 char) not null,
    easy_connect_tns varchar2(150 char) not null,
-   environment      varchar2(10 char)  not null,
-   license_type     varchar2(10 char)  not null,
-   active           number(1)          default 1 not null,
-   constraint pk_oracle_instance_list primary key (easy_connect_tns),
-   constraint chk_ora_inst_env        check (environment  in ('PRD','TST','DEV','UAT')),
-   constraint chk_ora_inst_lic        check (license_type in ('SAP','CPU')),
-   constraint chk_ora_inst_active     check (active in (0, 1))
+   environment      varchar2(10 char) not null,
+   license_type     varchar2(10 char) not null,
+   active           number(1) default 1 not null,
+   constraint pk_oracle_collect_list primary key ( collect_name )
+);
+
+-- ============================================================
+-- scoring_activity_list
+-- ============================================================
+create table scoring_activity_list (
+   scoring_type       varchar2(30 char) not null,
+   last_scoring_date  timestamp default current_timestamp not null,
+   last_scoring_value number(3) default 0 not null,
+   scoring_color      varchar2(100 char) not null,
+   scoring_status     varchar2(10 char) not null,
+   status_color       varchar2(100 char),
+   scoring_label      varchar2(300 char),
+   scoring_order      number(1),
+   constraint pk_scoring_activity_list primary key ( scoring_type )
 );

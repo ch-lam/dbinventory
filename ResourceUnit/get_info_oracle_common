@@ -5,14 +5,14 @@
 # =============================================================================
 
 # ── Environnement Oracle client ───────────────────────────────────────────────
-export ORACLE_HOME="${ORACLE_HOME:-/inventory/OracleClient/instantclient_23_9}"
-export TNS_ADMIN="${TNS_ADMIN:-${ORACLE_HOME}/network}"
-export LD_LIBRARY_PATH="${ORACLE_HOME}"
-export PATH="${PATH}:${ORACLE_HOME}"
+# export ORACLE_HOME="${ORACLE_HOME:-/inventory/OracleClient/instantclient_23_9}"
+# export TNS_ADMIN="${TNS_ADMIN:-${ORACLE_HOME}/network}"
+# export LD_LIBRARY_PATH="${ORACLE_HOME}"
+# export PATH="${PATH}:${ORACLE_HOME}"
 
-MONITORING_USER="monitoring"
-MONITORING_PASS="changeme"
-MAIL_TO="IT-DBA@chl.lu"
+MONITORING_USER="c##monitoring"
+MONITORING_PASS="Monitoring:PwdToChange:000:001"
+MAIL_TO="clam@clam.lu"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIST_DIR="${SCRIPT_DIR}/lists"
@@ -20,7 +20,8 @@ LIST_FILE="${SCRIPT_DIR}/oracle_database_lists.lst"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 log()     { printf '[%s] %s\n' "$(date '+%H:%M:%S')" "$*"; }
-err()     { log "ERROR: $*" >&2; }log_err() { err "$*"; printf '%s\n' "$*" >> "${LIST_DIR}/error_db.lst"; }
+err()     { log "ERROR: $*" >&2; }
+log_err() { err "$*"; printf '%s\n' "$*" >> "${LIST_DIR}/error_db.lst"; }
 
 # Exécute le SQL fourni sur stdin contre une base cible.
 # Utiliser pour toutes les requêtes de collecte (WHENEVER SQLERROR CONTINUE).
@@ -28,7 +29,8 @@ sql_run() {
     local dsn="$1"
     {
         printf 'WHENEVER SQLERROR CONTINUE\n'
-        printf 'SET FEEDBACK OFF\nSET HEADING OFF\nSET PAGESIZE 0\nSET LINESIZE 32767\n'
+        printf 'SET ECHO OFF\nSET FEEDBACK OFF\nSET HEADING OFF\nSET PAGESIZE 0\n'
+        printf 'SET LINESIZE 32767\nSET TRIMSPOOL ON\n'
         printf "ALTER SESSION SET NLS_DATE_FORMAT='YYYY-MM-DD HH24:MI:SS';\n"
         cat
         printf '\nEXIT;\n'
@@ -55,16 +57,23 @@ EOF
 finalize_lst() {
     local src="$1" dst="$2"
     [[ -f "${src}" ]] || return 0
-    sort -u "${src}" | grep -v '^\s*$' | grep ',' | grep -Ev '^(SP2-|ORA-|ERROR )' > "${dst}"
+    sort -u "${src}" \
+        | grep -v '^\s*$' \
+        | grep ',' \
+        | grep -Ev '^(SP2-|ORA-|ERROR )' \
+        | grep -Ev '^\s+' \
+        | grep -Eiv '\b(SELECT|FROM|WHERE|UNION|GROUP|ORDER|HAVING|JOIN)\b|\|\|' \
+        | sed 's/""//g' \
+        > "${dst}" || true
     rm -f "${src}"
 }
 
 # Initialise (vide) les fichiers temporaires listés.
-# Usage : init_temps tag1 tag2 ...  → crée ${LIST_DIR}/tag1_temp.lst …
+# Usage : init_temps tag1 tag2 ...  → crée ${LIST_DIR}/tag1_temp.csv …
 init_temps() {
     mkdir -p "${LIST_DIR}"
     local f
-    for f in "$@"; do : > "${LIST_DIR}/${f}_temp.lst"; done
+    for f in "$@"; do : > "${LIST_DIR}/${f}_temp.csv"; done
 }
 
 # Envoie un email d'erreur et quitte avec code 1 si error_db.lst existe.

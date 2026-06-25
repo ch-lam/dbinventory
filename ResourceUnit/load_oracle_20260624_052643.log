@@ -1,0 +1,932 @@
+
+SP2-0158: unknown SET option "lines"
+-- LOADING: lists/oracle_hosts.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_HOSTS
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Number of rows processed: 3
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_users.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_USERS
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Number of rows processed: 35
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_services.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SERVICES
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Number of rows processed: 3
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_pdbs.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_PDBS
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Number of rows processed: 5
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_databases.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_DATABASES
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Number of rows processed: 2
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_dataguard.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_DATAGUARD
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Number of rows processed: 0
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_psu.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_PSU
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Number of rows processed: 3
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_lms.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_LMS
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Number of rows processed: 204
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_client_version.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_CLIENT_VERSION
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Number of rows processed: 15
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_security_admin_high_privs.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SEC_ADMIN_HIGH_PRIVS
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 7
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_security_default_user_pwd.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SEC_DEFAULT_USER_PWD
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 0
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_security_high_role_privs.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SEC_HIGH_ROLE_PRIVS
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 78
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_security_high_sys_privs.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SECURITY_HIGH_SYS_PRIVS
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 172
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_security_high_tab_privs.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SECURITY_HIGH_TAB_PRIVS
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 45
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_security_profile.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SECURITY_PROFILE
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 588
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_security_default_profile.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SEC_DEFAULT_PROFILE
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 173
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_security_parameter.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SECURITY_PARAMETER
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#ERROR Insert failed in batch rows  1  through  40 
+#ERROR ORA-01400: cannot insert NULL into ("DBINVENTORY"."ORACLE_SECURITY_PARAMETER"."PARAMETER_VALUE")
+Help: https://docs.oracle.com/error-help/db/ora-01400/
+#ERROR Row 10 data follows:
+D19INFR,,pdb_os_credential,,
+#ERROR Row 11 data follows:
+D19INFR,TRACE,sec_protocol_error_trace_action,,
+#ERROR Row 12 data follows:
+D19INFR,TRUE,audit_sys_operations,,
+#ERROR Row 13 data follows:
+D19INFR,TRUE,resource_limit,,
+#ERROR Row 14 data follows:
+D19INFR,TRUE,sec_case_sensitive_logon,,
+#ERROR Row 15 data follows:
+D23APP1,0,_sys_logon_delay,,
+#ERROR Row 16 data follows:
+D23APP1,3,sec_max_failed_login_attempts,,
+#ERROR Row 17 data follows:
+D23APP1,(DROP,3),sec_protocol_error_further_action,,
+#ERROR Row 18 data follows:
+D23APP1,FALSE,audit_sys_operations,,
+#ERROR Row 19 data follows:
+D23APP1,FALSE,os_roles,,
+#ERROR Row 20 data follows:
+D23APP1,FALSE,remote_os_roles,,
+#ERROR Row 21 data follows:
+D23APP1,FALSE,sec_return_server_release_banner,,
+#ERROR Row 22 data follows:
+D23APP1,NONE,audit_trail,,
+#ERROR Row 23 data follows:
+D23APP1,,pdb_os_credential,,
+#ERROR Row 24 data follows:
+D23APP1,TRACE,sec_protocol_error_trace_action,,
+#ERROR Row 25 data follows:
+D23APP1,TRUE,resource_limit,,
+#ERROR Row 26 data follows:
+D23APP1,TRUE,Unified Auditing,,
+#ERROR Row 27 data follows:
+P19INFR,0,_sys_logon_delay,,
+#ERROR Row 28 data follows:
+P19INFR,3,sec_max_failed_login_attempts,,
+#ERROR Row 29 data follows:
+P19INFR,DB,audit_trail,,
+#ERROR Row 30 data follows:
+P19INFR,(DROP,3),sec_protocol_error_further_action,,
+#ERROR Row 31 data follows:
+P19INFR,FALSE,os_roles,,
+#ERROR Row 32 data follows:
+P19INFR,FALSE,remote_os_authent,,
+#ERROR Row 33 data follows:
+P19INFR,FALSE,remote_os_roles,,
+#ERROR Row 34 data follows:
+P19INFR,FALSE,sec_return_server_release_banner,,
+#ERROR Row 35 data follows:
+P19INFR,FALSE,Unified Auditing,,
+#ERROR Row 36 data follows:
+P19INFR,,pdb_os_credential,,
+#ERROR Row 37 data follows:
+P19INFR,TRACE,sec_protocol_error_trace_action,,
+#ERROR Row 38 data follows:
+P19INFR,TRUE,audit_sys_operations,,
+#ERROR Row 39 data follows:
+P19INFR,TRUE,resource_limit,,
+#ERROR Row 40 data follows:
+P19INFR,TRUE,sec_case_sensitive_logon,,
+#INFO Number of rows processed: 40
+#INFO Number of rows in error: 31
+#INFO No rows committed
+WARNING: Processed with errors
+-- LOADING: lists/oracle_security_audit_enable.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SECURITY_AUDIT_ENABLE
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 0
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_security_tablespace.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SECURITY_TABLESPACE
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 24
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_security_usermig_table_exist.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SEC_USERMIG_TBL_EXIST
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Number of rows processed: 0
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_security_network_encryption.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SEC_NETWORK_ENCRYPTION
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 0
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_size_usage.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SIZE_USAGE
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 20
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_size_usage_seg.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_SIZE_USAGE_SEG
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 16
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_metrics_cpu_memory.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_METRICS_CPU_MEMORY
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 5
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors
+-- LOADING: lists/oracle_metrics_cpu_service.csv
+
+csv
+column_names off
+delimiter ,
+enclosures ""
+double off
+encoding UTF8
+row_limit off
+row_terminator default
+skip_rows 0
+skip_after_names
+
+Load data into table DBINVENTORY.ORACLE_METRICS_CPU_SERVICE
+batch_rows 50
+batches_per_commit 0
+clean_names transform
+column_size rounded
+commit off
+date_format 
+errors unlimited
+map_column_names off
+method insert
+timestamp_format 
+timestamptz_format 
+locale English United States
+scan_rows 0
+truncate off
+unknown_columns_fail on
+
+#INFO Scan skipped because scan rows is 0
+#INFO Number of rows processed: 9
+#INFO Number of rows in error: 0
+#INFO No rows committed
+SUCCESS: Processed without errors

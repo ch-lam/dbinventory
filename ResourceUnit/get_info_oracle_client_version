@@ -25,12 +25,13 @@ while IFS=';' read -r db_env lic db; do
     [[ "${db_role}" == *STANDBY* ]] && continue
 
     # db_name et db_version extraits de la base cible (plus fiable que le fichier liste)
-    sql_run "${db}" <<SQL >> "${LIST_DIR}/client_info_temp.lst"
-SELECT dbs.name||','||(SELECT version FROM v\$instance)||','||'${db_env},'||
-       NVL(pdbs.pdb_name,'NON_CONTAINER')||','||
-       inf.CLIENT_VERSION||','||inf.CLIENT_DRIVER||','||
-       sess.USERNAME||','||sess.MACHINE||','||sess.SERVICE_NAME||','||
-       NVL(sess.FAILOVER_TYPE,'NONE')||','||NVL(sess.FAILOVER_METHOD,'NONE')
+    sql_run "${db}" <<SQL >> "${LIST_DIR}/client_info_temp.csv"
+SELECT '"'||dbs.name||'","'||(SELECT version FROM v\$instance)||'","${db_env}","'||
+       NVL(pdbs.pdb_name,'NON_CONTAINER')||'","'||
+       REPLACE(inf.CLIENT_VERSION,'"','')||'","'||REPLACE(inf.CLIENT_DRIVER,'"','')||'","'||
+       REPLACE(sess.USERNAME,'"','')||'","'||REPLACE(sess.MACHINE,'"','')||'","'||
+       REPLACE(sess.SERVICE_NAME,'"','')||'","'||
+       NVL(sess.FAILOVER_TYPE,'NONE')||'","'||NVL(sess.FAILOVER_METHOD,'NONE')||'"'
 FROM   v\$session_connect_info inf
 JOIN   v\$session sess ON inf.SID = sess.SID AND inf.SERIAL# = sess.SERIAL#
 LEFT JOIN dba_pdbs pdbs ON pdbs.pdb_id = inf.CON_ID
@@ -42,7 +43,7 @@ SQL
 
 done < <(grep -v '^\s*#' "${LIST_FILE}" | grep -v '^\s*$' | sort -u)
 
-finalize_lst "${LIST_DIR}/client_info_temp.lst" "${LIST_DIR}/databases_oracle_client_version.lst"
+finalize_lst "${LIST_DIR}/client_info_temp.csv" "${LIST_DIR}/oracle_client_version.csv"
 
 report_errors "Oracle inventory (client version): erreurs de connexion"
 log "Terminé."

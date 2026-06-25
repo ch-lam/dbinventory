@@ -1,5 +1,5 @@
 #!/bin/bash
-###DEV BY J.RAGUENEAU
+
 export PATH=/opt/mssql-tools18/bin:${PATH}
 
 export RETCODE=0
