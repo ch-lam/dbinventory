@@ -15,8 +15,8 @@ MONITORING_PASS="Monitoring:PwdToChange:000:001"
 MAIL_TO="clam@clam.lu"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LIST_DIR="${SCRIPT_DIR}/lists"
-LIST_FILE="${SCRIPT_DIR}/oracle_database_lists.lst"
+LIST_DIR="${SCRIPT_DIR}/../collect"
+LIST_FILE="${SCRIPT_DIR}/../collect/oracle_database_lists.lst"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 log()     { printf '[%s] %s\n' "$(date '+%H:%M:%S')" "$*"; }

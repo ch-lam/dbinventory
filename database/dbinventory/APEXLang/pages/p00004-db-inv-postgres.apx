@@ -1,0 +1,17 @@
+page 4 (
+    name: DB Inv. - Postgres
+    alias: DB-INV-POSTGRES
+    title: DB Inv. - Postgres
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+)
+

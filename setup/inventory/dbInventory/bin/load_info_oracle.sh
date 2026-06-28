@@ -122,69 +122,69 @@ SET LOAD COMMIT OFF
 -- ORACLE – Inventaire
 -- ===========================================================================
 
-PROMPT -- LOADING: lists/oracle_hosts.csv
-LOAD oracle_hosts lists/oracle_hosts.csv
-PROMPT -- LOADING: lists/oracle_users.csv
-LOAD oracle_users lists/oracle_users.csv
-PROMPT -- LOADING: lists/oracle_services.csv
-LOAD oracle_services lists/oracle_services.csv
-PROMPT -- LOADING: lists/oracle_pdbs.csv
-LOAD oracle_pdbs lists/oracle_pdbs.csv
-PROMPT -- LOADING: lists/oracle_databases.csv
-LOAD oracle_databases lists/oracle_databases.csv
-PROMPT -- LOADING: lists/oracle_dataguard.csv
-LOAD oracle_dataguard lists/oracle_dataguard.csv
-PROMPT -- LOADING: lists/oracle_psu.csv
-LOAD oracle_psu lists/oracle_psu.csv
-PROMPT -- LOADING: lists/oracle_lms.csv
-LOAD oracle_lms lists/oracle_lms.csv
-PROMPT -- LOADING: lists/oracle_client_version.csv
-LOAD oracle_client_version lists/oracle_client_version.csv
+PROMPT -- LOADING: ../collect/oracle_hosts.csv
+LOAD oracle_hosts ../collect/oracle_hosts.csv
+PROMPT -- LOADING: ../collect/oracle_users.csv
+LOAD oracle_users ../collect/oracle_users.csv
+PROMPT -- LOADING: ../collect/oracle_services.csv
+LOAD oracle_services ../collect/oracle_services.csv
+PROMPT -- LOADING: ../collect/oracle_pdbs.csv
+LOAD oracle_pdbs ../collect/oracle_pdbs.csv
+PROMPT -- LOADING: ../collect/oracle_databases.csv
+LOAD oracle_databases ../collect/oracle_databases.csv
+PROMPT -- LOADING: ../collect/oracle_dataguard.csv
+LOAD oracle_dataguard ../collect/oracle_dataguard.csv
+PROMPT -- LOADING: ../collect/oracle_psu.csv
+LOAD oracle_psu ../collect/oracle_psu.csv
+PROMPT -- LOADING: ../collect/oracle_lms.csv
+LOAD oracle_lms ../collect/oracle_lms.csv
+PROMPT -- LOADING: ../collect/oracle_client_version.csv
+LOAD oracle_client_version ../collect/oracle_client_version.csv
 -- oracle_backup : désactivé (données non disponibles)
--- PROMPT -- LOADING: lists/oracle_backup.csv
--- LOAD oracle_backup lists/oracle_backup.csv
+-- PROMPT -- LOADING: ../collect/oracle_backup.csv
+-- LOAD oracle_backup ../collect/oracle_backup.csv
 
 -- ===========================================================================
 -- ORACLE – Sécurité
 -- ===========================================================================
 
-PROMPT -- LOADING: lists/oracle_security_admin_high_privs.csv
-LOAD oracle_sec_admin_high_privs lists/oracle_security_admin_high_privs.csv
-PROMPT -- LOADING: lists/oracle_security_default_user_pwd.csv
-LOAD oracle_sec_default_user_pwd lists/oracle_security_default_user_pwd.csv
-PROMPT -- LOADING: lists/oracle_security_high_role_privs.csv
-LOAD oracle_sec_high_role_privs lists/oracle_security_high_role_privs.csv
-PROMPT -- LOADING: lists/oracle_security_high_sys_privs.csv
-LOAD oracle_security_high_sys_privs lists/oracle_security_high_sys_privs.csv
-PROMPT -- LOADING: lists/oracle_security_high_tab_privs.csv
-LOAD oracle_security_high_tab_privs lists/oracle_security_high_tab_privs.csv
-PROMPT -- LOADING: lists/oracle_security_profile.csv
-LOAD oracle_security_profile lists/oracle_security_profile.csv
-PROMPT -- LOADING: lists/oracle_security_default_profile.csv
-LOAD oracle_sec_default_profile lists/oracle_security_default_profile.csv
-PROMPT -- LOADING: lists/oracle_security_parameter.csv
-LOAD oracle_security_parameter lists/oracle_security_parameter.csv
-PROMPT -- LOADING: lists/oracle_security_audit_enable.csv
-LOAD oracle_security_audit_enable lists/oracle_security_audit_enable.csv
-PROMPT -- LOADING: lists/oracle_security_tablespace.csv
-LOAD oracle_security_tablespace lists/oracle_security_tablespace.csv
-PROMPT -- LOADING: lists/oracle_security_usermig_table_exist.csv
-LOAD oracle_sec_usermig_tbl_exist lists/oracle_security_usermig_table_exist.csv
-PROMPT -- LOADING: lists/oracle_security_network_encryption.csv
-LOAD oracle_sec_network_encryption lists/oracle_security_network_encryption.csv
+PROMPT -- LOADING: ../collect/oracle_security_admin_high_privs.csv
+LOAD oracle_sec_admin_high_privs ../collect/oracle_security_admin_high_privs.csv
+PROMPT -- LOADING: ../collect/oracle_security_default_user_pwd.csv
+LOAD oracle_sec_default_user_pwd ../collect/oracle_security_default_user_pwd.csv
+PROMPT -- LOADING: ../collect/oracle_security_high_role_privs.csv
+LOAD oracle_sec_high_role_privs ../collect/oracle_security_high_role_privs.csv
+PROMPT -- LOADING: ../collect/oracle_security_high_sys_privs.csv
+LOAD oracle_security_high_sys_privs ../collect/oracle_security_high_sys_privs.csv
+PROMPT -- LOADING: ../collect/oracle_security_high_tab_privs.csv
+LOAD oracle_security_high_tab_privs ../collect/oracle_security_high_tab_privs.csv
+PROMPT -- LOADING: ../collect/oracle_security_profile.csv
+LOAD oracle_security_profile ../collect/oracle_security_profile.csv
+PROMPT -- LOADING: ../collect/oracle_security_default_profile.csv
+LOAD oracle_sec_default_profile ../collect/oracle_security_default_profile.csv
+PROMPT -- LOADING: ../collect/oracle_security_parameter.csv
+LOAD oracle_security_parameter ../collect/oracle_security_parameter.csv
+PROMPT -- LOADING: ../collect/oracle_security_audit_enable.csv
+LOAD oracle_security_audit_enable ../collect/oracle_security_audit_enable.csv
+PROMPT -- LOADING: ../collect/oracle_security_tablespace.csv
+LOAD oracle_security_tablespace ../collect/oracle_security_tablespace.csv
+PROMPT -- LOADING: ../collect/oracle_security_usermig_table_exist.csv
+LOAD oracle_sec_usermig_tbl_exist ../collect/oracle_security_usermig_table_exist.csv
+PROMPT -- LOADING: ../collect/oracle_security_network_encryption.csv
+LOAD oracle_sec_network_encryption ../collect/oracle_security_network_encryption.csv
 
 -- ===========================================================================
 -- ORACLE – Capacity Planning
 -- ===========================================================================
 
-PROMPT -- LOADING: lists/oracle_size_usage.csv
-LOAD oracle_size_usage lists/oracle_size_usage.csv
-PROMPT -- LOADING: lists/oracle_size_usage_seg.csv
-LOAD oracle_size_usage_seg lists/oracle_size_usage_seg.csv
-PROMPT -- LOADING: lists/oracle_metrics_cpu_memory.csv
-LOAD oracle_metrics_cpu_memory lists/oracle_metrics_cpu_memory.csv
-PROMPT -- LOADING: lists/oracle_metrics_cpu_service.csv
-LOAD oracle_metrics_cpu_service lists/oracle_metrics_cpu_service.csv
+PROMPT -- LOADING: ../collect/oracle_size_usage.csv
+LOAD oracle_size_usage ../collect/oracle_size_usage.csv
+PROMPT -- LOADING: ../collect/oracle_size_usage_seg.csv
+LOAD oracle_size_usage_seg ../collect/oracle_size_usage_seg.csv
+PROMPT -- LOADING: ../collect/oracle_metrics_cpu_memory.csv
+LOAD oracle_metrics_cpu_memory ../collect/oracle_metrics_cpu_memory.csv
+PROMPT -- LOADING: ../collect/oracle_metrics_cpu_service.csv
+LOAD oracle_metrics_cpu_service ../collect/oracle_metrics_cpu_service.csv
 
 -- Commit final pour valider tous les chargements
 COMMIT;
@@ -223,8 +223,8 @@ parse_load_log "${LOG_FILE}" || {
 # Archivage des fichiers .csv Oracle
 # =============================================================================
 DIR_TIME=$(date '+%y%m%d%H%M%S')
-mkdir -p "lists/${DIR_TIME}"
-cp lists/oracle_*.csv "lists/${DIR_TIME}/"
+mkdir -p "../collect/${DIR_TIME}"
+cp ../collect/oracle_*.csv "../collect/${DIR_TIME}/"
 
-log "Fichiers archivés dans lists/${DIR_TIME}/"
+log "Fichiers archivés dans ../collect/${DIR_TIME}/"
 log "Chargement terminé."

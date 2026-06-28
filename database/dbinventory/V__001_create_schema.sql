@@ -1019,7 +1019,7 @@ create table oracle_sec_network_encryption (
 -- ============================================================
 create table oracle_security_parameter (
    db_name          varchar2(50 char) not null,
-   parameter_value  varchar2(50 char),
+   parameter_value  varchar2(1000 char),
    parameter_name   varchar2(50 char) not null,
    compliance_score number(2) default 0,
    date_value       timestamp default on null systimestamp not null

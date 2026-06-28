@@ -115,49 +115,49 @@ SET LOAD COMMIT OFF
 -- MSSQL – Inventaire
 -- ===========================================================================
 
-PROMPT -- LOADING: lists/mssql_hosts.csv
-LOAD mssql_hosts         lists/mssql_hosts.csv
-PROMPT -- LOADING: lists/mssql_databases.csv
-LOAD mssql_databases     lists/mssql_databases.csv
-PROMPT -- LOADING: lists/mssql_files.csv
-LOAD mssql_files         lists/mssql_files.csv
-PROMPT -- LOADING: lists/mssql_logins.csv
-LOAD mssql_logins        lists/mssql_logins.csv
-PROMPT -- LOADING: lists/mssql_users.csv
-LOAD mssql_users         lists/mssql_users.csv
-PROMPT -- LOADING: lists/mssql_loginwoperm.csv
-LOAD mssql_loginwoperm   lists/mssql_loginwoperm.csv
-PROMPT -- LOADING: lists/mssql_validatelogin.csv
-LOAD mssql_validatelogin lists/mssql_validatelogin.csv
-PROMPT -- LOADING: lists/mssql_backup.csv
-LOAD mssql_backup        lists/mssql_backup.csv
+PROMPT -- LOADING: ../collect/mssql_hosts.csv
+LOAD mssql_hosts         ../collect/mssql_hosts.csv
+PROMPT -- LOADING: ../collect/mssql_databases.csv
+LOAD mssql_databases     ../collect/mssql_databases.csv
+PROMPT -- LOADING: ../collect/mssql_files.csv
+LOAD mssql_files         ../collect/mssql_files.csv
+PROMPT -- LOADING: ../collect/mssql_logins.csv
+LOAD mssql_logins        ../collect/mssql_logins.csv
+PROMPT -- LOADING: ../collect/mssql_users.csv
+LOAD mssql_users         ../collect/mssql_users.csv
+PROMPT -- LOADING: ../collect/mssql_loginwoperm.csv
+LOAD mssql_loginwoperm   ../collect/mssql_loginwoperm.csv
+PROMPT -- LOADING: ../collect/mssql_validatelogin.csv
+LOAD mssql_validatelogin ../collect/mssql_validatelogin.csv
+PROMPT -- LOADING: ../collect/mssql_backup.csv
+LOAD mssql_backup        ../collect/mssql_backup.csv
 
 -- ===========================================================================
 -- MSSQL – Sécurité
 -- ===========================================================================
 
-PROMPT -- LOADING: lists/mssql_security_auditlevel.csv
-LOAD mssql_security_auditlevel       lists/mssql_security_auditlevel.csv
-PROMPT -- LOADING: lists/mssql_security_configoptions.csv
-LOAD mssql_security_configoptions    lists/mssql_security_configoptions.csv
-PROMPT -- LOADING: lists/mssql_security_dbproperties.csv
-LOAD mssql_security_dbproperties     lists/mssql_security_dbproperties.csv
-PROMPT -- LOADING: lists/mssql_security_encryption.csv
-LOAD mssql_security_encryption       lists/mssql_security_encryption.csv
-PROMPT -- LOADING: lists/mssql_security_groups.csv
-LOAD mssql_security_groups           lists/mssql_security_groups.csv
-PROMPT -- LOADING: lists/mssql_security_guestconnect.csv
-LOAD mssql_security_guestconnect     lists/mssql_security_guestconnect.csv
-PROMPT -- LOADING: lists/mssql_security_logins.csv
-LOAD mssql_security_logins           lists/mssql_security_logins.csv
-PROMPT -- LOADING: lists/mssql_security_orphanedusers.csv
-LOAD mssql_security_orphanedusers    lists/mssql_security_orphanedusers.csv
-PROMPT -- LOADING: lists/mssql_security_publicpermission.csv
-LOAD mssql_security_publicpermission lists/mssql_security_publicpermission.csv
-PROMPT -- LOADING: lists/mssql_security_registryinfo.csv
-LOAD mssql_security_registryinfo     lists/mssql_security_registryinfo.csv
-PROMPT -- LOADING: lists/mssql_security_sqlserveraudit.csv
-LOAD mssql_security_sqlserveraudit   lists/mssql_security_sqlserveraudit.csv
+PROMPT -- LOADING: ../collect/mssql_security_auditlevel.csv
+LOAD mssql_security_auditlevel       ../collect/mssql_security_auditlevel.csv
+PROMPT -- LOADING: ../collect/mssql_security_configoptions.csv
+LOAD mssql_security_configoptions    ../collect/mssql_security_configoptions.csv
+PROMPT -- LOADING: ../collect/mssql_security_dbproperties.csv
+LOAD mssql_security_dbproperties     ../collect/mssql_security_dbproperties.csv
+PROMPT -- LOADING: ../collect/mssql_security_encryption.csv
+LOAD mssql_security_encryption       ../collect/mssql_security_encryption.csv
+PROMPT -- LOADING: ../collect/mssql_security_groups.csv
+LOAD mssql_security_groups           ../collect/mssql_security_groups.csv
+PROMPT -- LOADING: ../collect/mssql_security_guestconnect.csv
+LOAD mssql_security_guestconnect     ../collect/mssql_security_guestconnect.csv
+PROMPT -- LOADING: ../collect/mssql_security_logins.csv
+LOAD mssql_security_logins           ../collect/mssql_security_logins.csv
+PROMPT -- LOADING: ../collect/mssql_security_orphanedusers.csv
+LOAD mssql_security_orphanedusers    ../collect/mssql_security_orphanedusers.csv
+PROMPT -- LOADING: ../collect/mssql_security_publicpermission.csv
+LOAD mssql_security_publicpermission ../collect/mssql_security_publicpermission.csv
+PROMPT -- LOADING: ../collect/mssql_security_registryinfo.csv
+LOAD mssql_security_registryinfo     ../collect/mssql_security_registryinfo.csv
+PROMPT -- LOADING: ../collect/mssql_security_sqlserveraudit.csv
+LOAD mssql_security_sqlserveraudit   ../collect/mssql_security_sqlserveraudit.csv
 
 -- Commit final pour valider tous les chargements
 COMMIT;
@@ -196,8 +196,8 @@ parse_load_log "${LOG_FILE}" || {
 # Archivage des fichiers .csv MSSQL
 # =============================================================================
 DIR_TIME=$(date '+%y%m%d%H%M%S')
-mkdir -p "lists/${DIR_TIME}"
-cp lists/mssql*.csv "lists/${DIR_TIME}/"
+mkdir -p "../collect/${DIR_TIME}"
+cp ../collect/mssql*.csv "../collect/${DIR_TIME}/"
 
-log "Fichiers archivés dans lists/${DIR_TIME}/"
+log "Fichiers archivés dans ../collect/${DIR_TIME}/"
 log "Chargement terminé."

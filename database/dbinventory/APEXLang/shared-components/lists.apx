@@ -1,0 +1,664 @@
+list activity-reports (
+    name: Activity Reports
+    config {
+        buildOption: @feature-activity-reporting
+    }
+
+    entry application-error-log (
+        label: Application Error Log
+        icon {
+            imageIconCssClasses: fa-exclamation
+        }
+        layout {
+            sequence: 30
+        }
+        link {
+            target: {
+                page: 10012
+                clearCache: 10012
+            }
+        }
+        userDefinedAttributes {
+            1: Report of errors logged by this application
+        }
+    )
+
+    entry automations-log (
+        label: Automations Log
+        icon {
+            imageIconCssClasses: fa-gears
+        }
+        layout {
+            sequence: 60
+        }
+        link {
+            target: {
+                page: 10015
+                clearCache: 10015
+                action: resetRegions
+            }
+        }
+        userDefinedAttributes {
+            1: Report of automation executions and messages logged by this application
+        }
+        serverSideCondition {
+            type: rowsReturned
+            sqlQuery:
+                ```sql
+                select 1
+                from apex_appl_automations a, apex_automation_log l
+                where a.automation_id = l.automation_id
+                and l.application_id = :APP_ID
+                ```
+        }
+    )
+
+    entry dashboard (
+        label: Dashboard
+        icon {
+            imageIconCssClasses: fa-area-chart
+        }
+        layout {
+            sequence: 10
+        }
+        link {
+            target: {
+                page: 10010
+                clearCache: 10010
+            }
+        }
+        userDefinedAttributes {
+            1: View application activity metrics
+        }
+    )
+
+    entry page-performance (
+        label: Page Performance
+        icon {
+            imageIconCssClasses: fa-file-chart
+        }
+        layout {
+            sequence: 40
+        }
+        link {
+            target: {
+                page: 10013
+                clearCache: 10013
+            }
+        }
+        userDefinedAttributes {
+            1: Report of activity and performance by application page
+        }
+    )
+
+    entry page-views (
+        label: Page Views
+        icon {
+            imageIconCssClasses: fa-file-search
+        }
+        layout {
+            sequence: 50
+        }
+        link {
+            target: {
+                page: 10014
+                clearCache: 10014
+                action: resetRegions
+            }
+        }
+        userDefinedAttributes {
+            1: Report of each page view by user including date of access and elapsed time
+        }
+    )
+
+    entry top-users (
+        label: Top Users
+        icon {
+            imageIconCssClasses: fa-user-chart
+        }
+        layout {
+            sequence: 20
+        }
+        link {
+            target: {
+                page: 10011
+                clearCache: 10011
+            }
+        }
+        userDefinedAttributes {
+            1: Report of page views aggregated by user
+        }
+    )
+
+)
+
+list navigation-bar (
+    name: Navigation Bar
+
+    entry app-user (
+        label: &APP_USER.
+        icon {
+            imageIconCssClasses: fa-user
+        }
+        layout {
+            sequence: 20
+        }
+        link {
+            target: {
+                type: url
+                url: #
+            }
+        }
+        userDefinedAttributes {
+            2: has-username
+        }
+    )
+
+    entry install-app (
+        label: Install App
+        icon {
+            imageIconCssClasses: fa-cloud-download
+        }
+        layout {
+            sequence: 10
+        }
+        isCurrent {
+            type: never
+        }
+        link {
+            target: {
+                type: url
+                url: #action$a-pwa-install
+            }
+        }
+        userDefinedAttributes {
+            2: a-pwaInstall
+        }
+    )
+
+    entry list_item (
+        label: ---
+        layout {
+            sequence: 30
+            parentEntry: @app-user
+        }
+        link {
+            target: {
+                type: url
+                url: separator
+            }
+        }
+    )
+
+    entry sign-out (
+        label: Sign Out
+        icon {
+            imageIconCssClasses: fa-sign-out
+        }
+        layout {
+            sequence: 40
+            parentEntry: @app-user
+        }
+        link {
+            target: {
+                type: url
+                url: &LOGOUT_URL.
+            }
+        }
+    )
+
+)
+
+list navigation-menu (
+    name: Navigation Menu
+
+    entry activity-reports (
+        label: Activity Reports
+        icon {
+            imageIconCssClasses: fa-analytics
+        }
+        layout {
+            sequence: 10010
+            parentEntry: @administration
+        }
+        link {
+            target: {
+                page: 10001
+            }
+        }
+    )
+
+    entry administration (
+        label: Administration
+        icon {
+            imageIconCssClasses: fa-user-wrench
+        }
+        layout {
+            sequence: 10000
+        }
+        link {
+            target: {
+                page: 10000
+            }
+        }
+        security {
+            authorizationScheme: @administration-rights
+        }
+    )
+
+    entry capacity-planning (
+        label: Capacity Planning
+        icon {
+            imageIconCssClasses: fa-line-chart
+        }
+        layout {
+            sequence: 29
+            parentEntry: @oracle
+        }
+        link {
+            target: {
+                page: 2
+            }
+        }
+    )
+
+    entry capacity-planning-2 (
+        label: Capacity Planning
+        icon {
+            imageIconCssClasses: fa-line-chart
+        }
+        layout {
+            sequence: 39
+            parentEntry: @ms-sql
+        }
+        link {
+            target: {
+                page: 3
+            }
+        }
+    )
+
+    entry capacity-planning-3 (
+        label: Capacity Planning
+        icon {
+            imageIconCssClasses: fa-line-chart
+        }
+        layout {
+            sequence: 49
+            parentEntry: @postgres
+        }
+        link {
+            target: {
+                page: 4
+            }
+        }
+    )
+
+    entry capacity-planning-4 (
+        label: Capacity Planning
+        icon {
+            imageIconCssClasses: fa-line-chart
+        }
+        layout {
+            sequence: 59
+            parentEntry: @mysql
+        }
+        link {
+            target: {
+                page: 5
+            }
+        }
+    )
+
+    entry compliance-security (
+        label: Compliance & Security
+        icon {
+            imageIconCssClasses: fa-database-lock
+        }
+        layout {
+            sequence: 21
+            parentEntry: @oracle
+        }
+        link {
+            target: {
+                page: 2
+            }
+        }
+    )
+
+    entry compliance-security-2 (
+        label: Compliance & Security
+        icon {
+            imageIconCssClasses: fa-database-lock
+        }
+        layout {
+            sequence: 31
+            parentEntry: @ms-sql
+        }
+        link {
+            target: {
+                page: 3
+            }
+        }
+    )
+
+    entry compliance-security-3 (
+        label: Compliance & Security
+        icon {
+            imageIconCssClasses: fa-database-lock
+        }
+        layout {
+            sequence: 41
+            parentEntry: @postgres
+        }
+        link {
+            target: {
+                page: 4
+            }
+        }
+    )
+
+    entry compliance-security-4 (
+        label: Compliance & Security
+        icon {
+            imageIconCssClasses: fa-database-lock
+        }
+        layout {
+            sequence: 51
+            parentEntry: @mysql
+        }
+        link {
+            target: {
+                page: 5
+            }
+        }
+    )
+
+    entry dashboard (
+        label: Dashboard
+        icon {
+            imageIconCssClasses: fa-database-chart
+        }
+        layout {
+            sequence: 10
+        }
+        link {
+            target: {
+                page: 1
+            }
+        }
+    )
+
+    entry databases (
+        label: Databases
+        icon {
+            imageIconCssClasses: fa-database
+        }
+        layout {
+            sequence: 33
+            parentEntry: @ms-sql
+        }
+        link {
+            target: {
+                page: 3
+            }
+        }
+    )
+
+    entry databases-cdb (
+        label: Databases (CDB)
+        icon {
+            imageIconCssClasses: fa-database-application
+        }
+        layout {
+            sequence: 22
+            parentEntry: @oracle
+        }
+        link {
+            target: {
+                page: 2
+            }
+        }
+    )
+
+    entry mongodb (
+        label: MongoDB
+        icon {
+            imageIconCssClasses: fa-tint
+        }
+        layout {
+            sequence: 60
+        }
+        isCurrent {
+            type: pages
+            pages: 6
+        }
+        link {
+            target: {
+                page: 6
+            }
+        }
+    )
+
+    entry ms-patching (
+        label: Patching
+        icon {
+            imageIconCssClasses: fa-server-wrench
+        }
+        layout {
+            sequence: 37
+            parentEntry: @ms-sql
+        }
+        link {
+            target: {
+                page: 3
+            }
+        }
+    )
+
+    entry ms-sql (
+        label: MS SQL
+        icon {
+            imageIconCssClasses: fa-tiles-2x2
+        }
+        layout {
+            sequence: 30
+        }
+        isCurrent {
+            type: pages
+            pages: 3
+        }
+        link {
+            target: {
+                page: 3
+            }
+        }
+    )
+
+    entry mysql (
+        label: MySQL
+        icon {
+            imageIconCssClasses: fa-file-sql-o
+        }
+        layout {
+            sequence: 50
+        }
+        isCurrent {
+            type: pages
+            pages: 5
+        }
+        link {
+            target: {
+                page: 5
+            }
+        }
+    )
+
+    entry mysql-databases (
+        label: Databases
+        icon {
+            imageIconCssClasses: fa-database
+        }
+        layout {
+            sequence: 53
+            parentEntry: @mysql
+        }
+        link {
+            target: {
+                page: 5
+            }
+        }
+    )
+
+    entry mysql-servers (
+        label: Servers
+        icon {
+            imageIconCssClasses: fa-database-application
+        }
+        layout {
+            sequence: 52
+            parentEntry: @mysql
+        }
+        link {
+            target: {
+                page: 5
+            }
+        }
+    )
+
+    entry oracle (
+        label: Oracle
+        icon {
+            imageIconCssClasses: fa-button
+        }
+        layout {
+            sequence: 20
+        }
+        isCurrent {
+            type: pages
+            pages: 2
+        }
+        link {
+            target: {
+                page: 2
+            }
+        }
+    )
+
+    entry oracle-patching (
+        label: Patching
+        icon {
+            imageIconCssClasses: fa-server-wrench
+        }
+        layout {
+            sequence: 27
+            parentEntry: @oracle
+        }
+        link {
+            target: {
+                page: 2
+            }
+        }
+    )
+
+    entry pg-databases (
+        label: Databases
+        icon {
+            imageIconCssClasses: fa-database
+        }
+        layout {
+            sequence: 43
+            parentEntry: @postgres
+        }
+        link {
+            target: {
+                page: 4
+            }
+        }
+    )
+
+    entry pg-servers (
+        label: Servers
+        icon {
+            imageIconCssClasses: fa-database-application
+        }
+        layout {
+            sequence: 42
+            parentEntry: @postgres
+        }
+        link {
+            target: {
+                page: 4
+            }
+        }
+    )
+
+    entry pluggable-databases-pdb (
+        label: Pluggable Databases (PDB)
+        icon {
+            imageIconCssClasses: fa-database
+        }
+        layout {
+            sequence: 23
+            parentEntry: @oracle
+        }
+        link {
+            target: {
+                page: 2
+            }
+        }
+    )
+
+    entry postgres (
+        label: Postgres
+        icon {
+            imageIconCssClasses: menu/db_tools_64.gif
+        }
+        layout {
+            sequence: 40
+        }
+        isCurrent {
+            type: pages
+            pages: 4
+        }
+        link {
+            target: {
+                page: 4
+            }
+        }
+    )
+
+    entry servers (
+        label: Servers
+        icon {
+            imageIconCssClasses: fa-database-application
+        }
+        layout {
+            sequence: 32
+            parentEntry: @ms-sql
+        }
+        link {
+            target: {
+                page: 3
+            }
+        }
+    )
+
+    entry services (
+        label: Services
+        icon {
+            imageIconCssClasses: fa-accessor-more
+        }
+        layout {
+            sequence: 23
+            parentEntry: @oracle
+        }
+        link {
+            target: {
+                page: 2
+            }
+        }
+    )
+
+)
+

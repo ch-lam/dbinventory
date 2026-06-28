@@ -1,0 +1,26 @@
+page 0 (
+    name: Global Page
+
+    dynamicAction hide-footer-on-all-pages (
+        name: Hide footer on all pages
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: $(".t-Footer").hide()
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

@@ -1,0 +1,142 @@
+page 1 (
+    name: DB Inv. - Dashboard
+    alias: DB-INV-DASHBOARD
+    title: DB Inv. -  Dashboard
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region compliance (
+        name: Scoring Activity
+        title: Scoring Activity
+        type: cards
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select scoring_type,
+                       to_char(last_scoring_date, 'DD/MM/YYYY HH24:MI:SS') last_scoring_date,
+                       last_scoring_value||'%' last_scoring_value,
+                       scoring_card_class,
+                       'fa fa-user' SCORING_ICON,
+                       scoring_status,
+                       status_color,
+                       scoring_label,
+                       apex_page.get_url( p_page => details_apex_page_number ) details_apex_page_number, scoring_order
+                  from scoring_activity_list;
+                
+                ```
+        }
+        orderBy {
+            type: staticValue
+            orderByClause: scoring_order asc
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/cards-container
+            templateOptions: [
+                #DEFAULT#
+                t-CardsRegion--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        componentAppearance {
+            gridColumns: 4
+        }
+        card {
+            cssClasses: &SCORING_CARD_CLASS.
+            primaryKeyColumn1: SCORING_TYPE
+        }
+        title {
+            column: SCORING_TYPE
+        }
+        body {
+            column: SCORING_LABEL
+        }
+        secondaryBody {
+            column: LAST_SCORING_DATE
+        }
+        iconAndBadge {
+            badgeColumn: LAST_SCORING_VALUE
+            badgeLabel: &SCORING_STATUS.
+            badgeCssClasses: &STATUS_COLOR.
+        }
+
+        action action (
+            type: fullCard
+            layout {
+                sequence: 10
+            }
+            behavior {
+                type: redirectUrl
+                targetUrl: &DETAILS_APEX_PAGE_NUMBER.
+            }
+        )
+
+    )
+
+    region os-type-distribution (
+        name: OS Type Distribution
+        title: OS Type Distribution
+        type: chart
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                i-h320
+                t-Region--scrollBody
+            ]
+        }
+        chart {
+            type: pie
+        }
+        legend {
+            show: true
+            position: bottom
+        }
+
+        series os-type-series (
+            name: OS Type
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT OS_TYPE AS LABEL, COUNT(*) AS VALUE
+                      FROM (
+                        SELECT OS_TYPE FROM MSSQL_HOSTS
+                        UNION ALL
+                        SELECT OS_TYPE FROM ORACLE_HOSTS
+                      )
+                     GROUP BY OS_TYPE
+                     ORDER BY VALUE DESC
+                    ```
+            }
+            columnMapping {
+                label: LABEL
+                value: VALUE
+            }
+        )
+
+    )
+
+)
+

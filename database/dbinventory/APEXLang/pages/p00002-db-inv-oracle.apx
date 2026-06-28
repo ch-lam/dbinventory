@@ -1,0 +1,17 @@
+page 2 (
+    name: DB Inv. - Oracle
+    alias: DB-INV-ORACLE
+    title: DB Inv. - Oracle
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+)
+

@@ -9,8 +9,8 @@ MONITORING_PASS="HY9Xine38wnkC2gLadd2YafJiz5gRw"
 MAIL_TO="sysadmin-mssql@chl.lu"   # à adapter : équipe en charge des serveurs Windows/MSSQL
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LIST_DIR="${SCRIPT_DIR}/lists"
-LIST_FILE="${SCRIPT_DIR}/mssql_database_lists.lst"
+LIST_DIR="${SCRIPT_DIR}/../collect"
+LIST_FILE="${SCRIPT_DIR}/../collect/mssql_database_lists.lst"
 SQL_DIR="${SCRIPT_DIR}/sql"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
