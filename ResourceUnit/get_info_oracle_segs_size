@@ -1,4 +1,0 @@
-#!/bin/bash
-# Fusionné dans get_info_oracle (size_usage_seg). Ce fichier n'est plus appelé.
-echo "Ce script est obsolète : la collecte segments est dans get_info_oracle." >&2
-exit 0

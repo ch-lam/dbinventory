@@ -1,0 +1,3 @@
+#ENVIRONMENT;LICENCE_TYPE;SQLSERVER_NAME:PORT
+PRD;PROVIDER;sqlsrvr01.ad.example.com:1433
+DEV;FREE;sqlsrvr02.ad.example.com:1434

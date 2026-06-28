@@ -1,7 +1,0 @@
--- =============================================================================
--- get_info_oracle_segs_size — OBSOLÈTE
---
--- Ce script est obsolète. La collecte des segments a été fusionnée dans
--- get_info_oracle (requêtes size_usage_seg).
--- Voir get_info_oracle_reqs.sql pour les requêtes correspondantes.
--- =============================================================================

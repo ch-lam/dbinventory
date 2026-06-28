@@ -1,3 +1,0 @@
-TST;SAP;oracledb01.internal:1521/D19INFR
-PRD;SAP;oracledb01.internal:1521/P19INFR
-PRD;SAP;oracledb02.internal:1521/D23APP1
