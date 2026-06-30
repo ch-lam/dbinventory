@@ -23,10 +23,15 @@ log()     { printf '[%s] %s\n' "$(date '+%H:%M:%S')" "$*"; }
 err()     { log "ERROR: $*" >&2; }
 log_err() { err "$*"; printf '%s\n' "$*" >> "${LIST_DIR}/error_db.lst"; }
 
+
 # Exécute le SQL fourni sur stdin contre une base cible.
-# Utiliser pour toutes les requêtes de collecte (WHENEVER SQLERROR CONTINUE).
 sql_run() {
-    local dsn="$1"
+    local dsn=$1
+    local service="${dsn##*/}"
+    local user="${MONITORING_USER}"
+    if [[ "$service" == *23* || "$service" == *19* ]]; then
+        user="C##${MONITORING_USER}"
+    fi
     {
         printf 'WHENEVER SQLERROR CONTINUE\n'
         printf 'SET ECHO OFF\nSET FEEDBACK OFF\nSET HEADING OFF\nSET PAGESIZE 0\n'
@@ -34,14 +39,18 @@ sql_run() {
         printf "ALTER SESSION SET NLS_DATE_FORMAT='YYYY-MM-DD HH24:MI:SS';\n"
         cat
         printf '\nEXIT;\n'
-    } | sqlplus -s "${MONITORING_USER}/${MONITORING_PASS}@${dsn}"
+    } | sqlplus -s "${user}/${MONITORING_PASS}@${dsn}"
 }
 
 # Vérifie la disponibilité et retourne le statut de la base.
-# Sortie : "PRIMARY,YES,19" ou "PHYSICAL STANDBY,NO,12"
-# Retour non-zero si la base est inaccessible.
 status_check() {
-    sqlplus -s "${MONITORING_USER}/${MONITORING_PASS}@${1}" 2>/dev/null <<'EOF'
+    local dsn=$1
+    local service="${dsn##*/}"
+    local user="${MONITORING_USER}"
+    if [[ "$service" == *23* || "$service" == *19* ]]; then
+        user="C##${MONITORING_USER}"
+    fi
+    sqlplus -s "${user}/${MONITORING_PASS}@${dsn}" 2>/dev/null <<'EOF'
 WHENEVER SQLERROR EXIT FAILURE
 SET FEEDBACK OFF
 SET HEADING OFF
