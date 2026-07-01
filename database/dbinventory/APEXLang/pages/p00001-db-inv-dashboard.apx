@@ -86,12 +86,114 @@ page 1 (
 
     )
 
-    region os-type-distribution (
-        name: OS Type Distribution
-        title: OS Type Distribution
+    region environment-distribution (
+        name: Environments
+        title: Environments
         type: chart
         layout {
-            sequence: 30
+            sequence: 40
+            slot: body
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                i-h320
+                t-Region--scrollBody
+            ]
+        }
+        chart {
+            type: pie
+        }
+        legend {
+            position: bottom
+        }
+
+        series environments (
+            name: Environment
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT ENVIRONMENT AS LABEL, COUNT(*) AS VALUE
+                      FROM (
+                        SELECT ENV ENVIRONMENT FROM MSSQL_HOSTS
+                        UNION ALL
+                        SELECT ENVIRONMENT FROM ORACLE_HOSTS
+                      )
+                     GROUP BY ENVIRONMENT
+                     ORDER BY VALUE DESC
+                    ```
+            }
+            columnMapping {
+                label: LABEL
+                value: VALUE
+            }
+        )
+
+    )
+
+    region mssql-versions (
+        name: MySQL : Versions
+        title: MySQL : Versions
+        type: chart
+        layout {
+            sequence: 90
+            slot: body
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                i-h320
+                t-Region--scrollBody
+            ]
+        }
+        chart {
+            type: pie
+        }
+        legend {
+            position: bottom
+        }
+
+        series mssql-versions (
+            name: MySQL Versions
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT mssql_product_version AS LABEL, COUNT(*) AS VALUE
+                      FROM MSSQL_HOSTS
+                     GROUP BY mssql_product_version
+                     ORDER BY VALUE DESC
+                    ```
+            }
+            columnMapping {
+                label: LABEL
+                value: VALUE
+            }
+        )
+
+    )
+
+    region mssql-versions_1 (
+        name: MSSQL : Versions
+        title: MSSQL : Versions
+        type: chart
+        layout {
+            sequence: 70
             slot: body
         }
         appearance {
@@ -107,7 +209,102 @@ page 1 (
             type: pie
         }
         legend {
-            show: true
+            position: bottom
+        }
+
+        series mssql-versions (
+            name: MSSQL Versions
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT mssql_product_version AS LABEL, COUNT(*) AS VALUE
+                      FROM MSSQL_HOSTS
+                     GROUP BY mssql_product_version
+                     ORDER BY VALUE DESC
+                    ```
+            }
+            columnMapping {
+                label: LABEL
+                value: VALUE
+            }
+        )
+
+    )
+
+    region oracle-versions (
+        name: Oracle : Versions
+        title: Oracle : Versions
+        type: chart
+        layout {
+            sequence: 60
+            slot: body
+            startNewRow: false
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                i-h320
+                t-Region--scrollBody
+            ]
+        }
+        chart {
+            type: pie
+        }
+        legend {
+            position: bottom
+        }
+
+        series oracle-versions (
+            name: Oracle Versions
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT DB_VERSION AS LABEL, COUNT(*) AS VALUE
+                      FROM ORACLE_DATABASES
+                     GROUP BY DB_VERSION
+                     ORDER BY VALUE DESC
+                    ```
+            }
+            columnMapping {
+                label: LABEL
+                value: VALUE
+            }
+        )
+
+    )
+
+    region os-type-distribution (
+        name: OS Types
+        title: OS Types
+        type: chart
+        layout {
+            sequence: 30
+            slot: body
+            columnSpan: 4
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                i-h320
+                t-Region--scrollBody
+            ]
+        }
+        chart {
+            type: pie
+        }
+        legend {
             position: bottom
         }
 
@@ -127,6 +324,54 @@ page 1 (
                         SELECT OS_TYPE FROM ORACLE_HOSTS
                       )
                      GROUP BY OS_TYPE
+                     ORDER BY VALUE DESC
+                    ```
+            }
+            columnMapping {
+                label: LABEL
+                value: VALUE
+            }
+        )
+
+    )
+
+    region postgres-versions (
+        name: Postgres : Versions
+        title: Postgres : Versions
+        type: chart
+        layout {
+            sequence: 80
+            slot: body
+            startNewRow: false
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                i-h320
+                t-Region--scrollBody
+            ]
+        }
+        chart {
+            type: pie
+        }
+        legend {
+            position: bottom
+        }
+
+        series postgres-versions (
+            name: Postgres Versions
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT mssql_product_version AS LABEL, COUNT(*) AS VALUE
+                      FROM MSSQL_HOSTS
+                     GROUP BY mssql_product_version
                      ORDER BY VALUE DESC
                     ```
             }

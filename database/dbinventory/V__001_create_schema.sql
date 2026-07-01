@@ -1136,6 +1136,7 @@ create table product_support (
    type                varchar2(15 char) not null,
    version             varchar2(100 char) not null,
    commercial_name     varchar2(100 char) not null,
+   display_name        varchar2(30 char) not null,
    end_of_support_date date not null,
    constraint pk_product_support primary key ( type,
                                                version )
