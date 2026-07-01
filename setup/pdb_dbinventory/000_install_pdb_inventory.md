@@ -10,6 +10,16 @@ Standard container (CDB) must be available.
 create_PDB.sh -m create -d <target_database> -p PDBD_DBINVENTORY -s DEV_ALL
 ```
 
+# check the service exists in the PDB (with oracle restarts and create_PDB.sh, it should be OK, if not, create service in PDB) 
+```sql
+-- connected in DBINVENTORY pdb 
+select name from v$services where name like 'DBINVENTORY%';
+
+-- if it doesnt exists
+exec dbms_service.create_service('DBINVENTORY_DEV_ALL', network_name => 'DBINVENTORY_DEV_ALL', aq_ha_notifications => TRUE, failover_method => DBMS_SERVICE.FAILOVER_METHOD_BASIC, failover_type => DBMS_SERVICE.FAILOVER_TYPE_SESSION, failover_retries => 180, failover_delay => 5);
+exec dbms_service.start_service('DBINVENTORY_DEV_ALL');
+```
+
 Install APEX
 ```bash
 # Connectected on the newly created PDB as SYS, and on the root dir apex installation
